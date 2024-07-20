@@ -1,0 +1,5 @@
+base_dir: /Users/markun/kaggle/data
+input_dir: /Users/markun/kaggle
+output_dir: /Users/markun/kaggle/outputs
+image_dir: /Users/markun/kaggle/data
+submission_dir: /kaggle/outputs

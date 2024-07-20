@@ -1,0 +1,4 @@
+image_size: 512
+augmentation: 
+  apply_aug: true
+  aug_prob: 0.75

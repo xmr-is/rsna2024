@@ -1,0 +1,41 @@
+hydra:
+  job:
+    name: train
+    chdir: true
+  run:
+    dir: ${directory.output_dir}/${hydra.job.name}/${hydra.job.override_dirname}
+  sweep:
+    dir: ${directory.output_dir}/${hydra.job.name}
+    subdir: ${hydra.job.override_dirname}
+
+defaults:
+  - _self_
+  - directory: local
+  - common: label
+  - dataset: rsna24_v1
+  - model: convnextv2
+
+exp_name: dummy
+debug: true
+num_folds: 5
+batch_size: 4
+seed: 42
+
+trainer:
+  epochs: 50
+  early_stopping_epochs: 3
+  use_amp: true
+  num_workers: os.cpu_count()
+  grad_acc: 2
+
+optimizer:
+  name: AdamW
+  lr: 1e-4
+
+scheduler:
+  name: CosineAnnealingWarmRestarts
+  wd: 1e-2
+
+criterion:
+  name: CrossEntropyLoss
+  max_grad_norm: None
