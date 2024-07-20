@@ -5,13 +5,12 @@ from typing import ClassVar
 from collections import OrderedDict
 from dataclasses import dataclass
 import itertools
+
 from tqdm import tqdm
 tqdm.pandas()
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-
-
 
 from run.config import TrainConfig
 from src.utils.environment_helper import EnvironmentHelper

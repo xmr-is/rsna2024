@@ -16,9 +16,15 @@ class DirectoryConfig:
     submission_dir: str
 
 @dataclass
+class SplitConfig:
+    train_study_id: int
+    valid_study_id: int
+
+@dataclass
 class PrepareDataConfig:
     common: CommonConfig
     directory: DirectoryConfig
+    split: SplitConfig
 
 @dataclass
 class DatasetConfig:

@@ -3,13 +3,11 @@ import os
 import sys
 from omegaconf import DictConfig
 
-# Kaggle
-# from .config import TrainConfig
 import torch
 import torch.nn as nn
 from torch.optim import AdamW
 from transformers import get_cosine_schedule_with_warmup
-# Local
+
 from run.config import TrainConfig
 from src.trainer import Trainer
 from src.models.model import RSNA24Model
@@ -25,11 +23,10 @@ def main(cfg: TrainConfig):
     env.set_random_seed(cfg.seed)
 
     prepare_data = PrepareData(cfg)
-    df = prepare_data.read_csv()
+    train_df, valid_df = prepare_data.read_csv()
 
-    datamodule = TrainDataModule(cfg, df)
-    train_dataloader = datamodule.train_dataloader()
-    valid_dataloader = datamodule.valid_dataloader()
+    datamodule = TrainDataModule(cfg, train_df, valid_df)
+    train_dataloader, valid_dataloader = datamodule.prepare_loader()
 
     model = RSNA24Model(cfg).to(env.device())
 

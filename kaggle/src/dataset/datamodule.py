@@ -1,4 +1,6 @@
 import os
+from typing import Tuple
+
 import pandas as pd
 from torch.utils.data import DataLoader
 
@@ -7,14 +9,23 @@ from .dataset import TrainDataset, ValidDataset
 
 class TrainDataModule(object):
 
-    def __init__(self, cfg: TrainConfig, df: pd.DataFrame) -> None:
+    def __init__(
+        self, 
+        cfg: TrainConfig, 
+        train_df: pd.DataFrame,
+        valid_df: pd.DataFrame
+    ) -> None:
         self.cfg = cfg
-        self.df = df
+        self.train_df = train_df
+        self.valid_df = valid_df
+
+    def prepare_loader(self) -> Tuple[DataLoader, DataLoader]:
+        return self.train_dataloader, self.valid_dataloader
 
     def train_dataloader(self) -> DataLoader:
         train_dataset = TrainDataset(
             cfg=self.cfg,
-            df=self.df,
+            df=self.train_df,
         )
         train_loader = DataLoader(
             train_dataset,
@@ -29,7 +40,7 @@ class TrainDataModule(object):
     def valid_dataloader(self) -> DataLoader:
         valid_dataset = ValidDataset(
             cfg=self.cfg,
-            df=self.df,
+            df=self.valid_df,
         )
         valid_loader = DataLoader(
             valid_dataset,
