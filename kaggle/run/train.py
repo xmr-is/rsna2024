@@ -5,9 +5,13 @@ from omegaconf import DictConfig
 
 # Kaggle
 # from .config import TrainConfig
-
+import torch
+import torch.nn as nn
+from torch.optim import AdamW
+from transformers import get_cosine_schedule_with_warmup
 # Local
 from run.config import TrainConfig
+from src.trainer import Trainer
 from src.models.model import RSNA24Model
 from src.dataset.prepare_data import PrepareData
 from src.dataset.datamodule import TrainDataModule
@@ -24,15 +28,41 @@ def main(cfg: TrainConfig):
     df = prepare_data.read_csv()
 
     datamodule = TrainDataModule(cfg, df)
-    train_loader = datamodule.train_dataloader()
-    valid_loader = datamodule.valid_dataloader()
+    train_dataloader = datamodule.train_dataloader()
+    valid_dataloader = datamodule.valid_dataloader()
 
     model = RSNA24Model(cfg).to(env.device())
 
-    trainer = Trainer(
-        model
-
+    optimizer=AdamW(
+        model.parameters(), 
+        lr=cfg.optimizer.lr, 
+        weight_decay=cfg.scheduler.wd
     )
+    warmup_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
+    num_total_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
+    num_cycles = 0.475
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=warmup_steps,
+        num_training_steps=num_total_steps,
+        num_cycles=num_cycles
+    )
+
+    weights = torch.tensor([1.0, 2.0, 4.0])
+    criterion = nn.CrossEntropyLoss(weight=weights.to(env.device))
+    criterion2 = nn.CrossEntropyLoss(weight=weights)
+
+    trainer = Trainer(
+        cfg=cfg,
+        model=model,
+        train_dataloader=train_dataloader,
+        valid_dataloader=valid_dataloader,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        criterion=criterion,
+        criterion2=criterion2
+    )
+    trainer.fit()
 
 
 if __name__ == "__main__":

@@ -1,202 +1,164 @@
+import os
+import math
+import sys
+from typing import ClassVar
+from collections import OrderedDict
 from dataclasses import dataclass
 import itertools
-from typing import ClassVar, Any
 from tqdm import tqdm
 tqdm.pandas()
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
-from torch.optim import AdamW
-from transformers import get_cosine_schedule_with_warmup
+
 
 from run.config import TrainConfig
 from src.utils.environment_helper import EnvironmentHelper
 
-@dataclass(init=True)
+@dataclass
 class Trainer(object):
-
     cfg: TrainConfig
-    model: None
-    dataloader: None
+    model: nn.Module
+    train_dataloader: DataLoader
+    valid_dataloader: DataLoader
+    optimizer: torch.optim.Optimizer
+    scheduler: torch.optim.lr_scheduler
+    criterion: nn.modules.loss._Loss
+    criterion2: nn.modules.loss._Loss
+    best_loss: float = 1.2
+    best_wll: float = 1.2
+    es_step: int = 0 
 
-    def _train(self):
+    def fit(self) -> None:
+        for epoch in range(1, self.cfg.trainer.epochs):
+            self.train(epoch)
+            self.valid(epoch)
 
+    def train(self, epoch: int) -> torch.Tensor:
         self.model.train()
+        total_loss = 0
         env = EnvironmentHelper(self.cfg)
         grad_scaler = env.scaler()
         autocast = env.autocast()
-        
-        optimizer = AdamW(
-            self.model.parameters(), 
-            lr=self.cfg.optimizer.lr, 
-            weight_decay=self.cfg.scheduler.wd
-        )
-
-        warmup_steps = self.cfg.trainer.epochs/10 * len(self.dataloader) // self.cfg.trainer.grad_acc
-        num_total_steps = self.cfg.trainer.epochs/10 * len(self.dataloader) // self.cfg.trainer.grad_acc
-        num_cycles = 0.475
-        scheduler = get_cosine_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=warmup_steps,
-            num_training_steps=num_total_steps,
-            num_cycles=num_cycles
-        )
-
-        weights = torch.tensor([1.0, 2.0, 4.0])
-        criterion = nn.CrossEntropyLoss(weight=weights.to(env.device))
-        criterion2 = nn.CrossEntropyLoss(weight=weights)
-
-        best_loss = 1.2
-        best_wll = 1.2
-        es_step = 0 
-        
         pbar = tqdm(
-            enumerate(self.dataloader, start=1),
-            total=len(self.dataloader),
+            enumerate(self.train_dataloader),
+            total=len(self.train_dataloader),
             desc='Train',
             disable=True
         )
-
-        for step, (inputs, labels) in pbar:         
+        for idx, (inputs, labels) in pbar:         
             inputs = inputs.to(env.device)
             labels  = labels.to(env.device)
             
-            if cfg.models.model.num_classes == 1:
-                labels = labels.unsqueeze(1) 
-
-            self.optimizer.zero_grad()
-            
-            with torch.cuda.amp.autocast():
+            with autocast:
+                loss = 0
                 outputs = self.model(inputs)
+                for col in range(self.cfg.model.params.num_labels):
+                    pred = outputs[:,col*3:col*3+3]
+                    gt = labels[:,col]
+                    loss = loss + self.criterion(pred, gt) / self.cfg.model.params.num_labels
 
-                if cfg.models.model.num_classes != 1:
-                    f = torch.nn.Softmax(dim=1)
-                    _outputs = f(outputs)
-                    _, _outputs = torch.max(_outputs, 1)
+                total_loss += loss.item()
+                if self.cfg.trainer.grad_acc > 1:
+                    loss = loss / self.cfg.trainer.grad_acc
 
-                loss = self.criterion(outputs, 
-                                      labels)
+            if not math.isfinite(loss):
+                print(f"Loss is {loss}, stopping training")
+                sys.exit(1)
 
-                running_loss += loss.item()
-                train_loss = running_loss / step
-
+            pbar.set_postfix(
+                OrderedDict(
+                    loss=f'{loss.item()*self.cfg.trainer.grad_acc:.6f}',
+                    lr=f'{self.optimizer.param_groups[0]["lr"]:.3e}'
+                )
+            )
             grad_scaler.scale(loss).backward()
-            grad_scaler.step(self.optimizer)
-            grad_scaler.update()
 
-            mem = torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0
-            current_lr = self.optimizer.param_groups[0]['lr']
-            pbar.set_postfix(train_loss = f'{train_loss:0.6f}',
-                             lr = f'{current_lr:0.6f}',
-                             gpu_mem = f'{mem:0.2f} GB')
-            
-        self.scheduler.step()     
-        
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), None or 1e9)
+
+            if (idx + 1) % self.cfg.trainer.grad_acc == 0:
+                grad_scaler.step(self.optimizer)
+                grad_scaler.update()
+                self.optimizer.zero_grad()
+                if self.scheduler is not None:
+                    self.scheduler.step()
+    
+        train_loss = total_loss/len(self.train_dataloader)
+        print(f'train_loss:{train_loss:.6f}') 
         return train_loss
 
 
-    def _valid(self, cfg):
-
-        if cfg.models.model.mcdropout:
-            # turn ON dropout
-            self.model.train()
-        else:
-            # turn OFF dropout
-            self.model.eval()
+    def valid(self, epoch: int) -> torch.Tensor:
+        self.model.eval()
+        env = EnvironmentHelper(self.cfg)
+        autocast = env.autocast()
+        total_loss = 0
+        y_preds = []
+        labels = []
 
         with torch.no_grad():
-            
-            dataset_size = 0
-            running_loss = 0.0
-            
-            pbar = tqdm(enumerate(self.dataloader, start=1),
-                        total=len(self.dataloader),
-                        desc='Valid',
-                        disable=True)
+            pbar = tqdm(
+                enumerate(self.valid_dataloader),
+                total=len(self.valid_dataloader),
+                desc='Valid',
+                disable=True
+            )
+            for idx, (inputs, labels) in pbar:         
+                inputs = inputs.to(env.device)
+                labels  = labels.to(env.device)
 
-            for step, (inputs, labels, image_path, image_id) in pbar:        
-                inputs  = inputs.to(ConfigurationHelper.device)
-                labels  = labels.to(ConfigurationHelper.device)
+                with autocast:
+                    loss = 0
+                    loss_ema = 0
+                    outputs = self.model(inputs)
+                    for col in range(self.cfg.model.params.num_labels):
+                        pred = outputs[:,col*3:col*3+3]
+                        gt = labels[:,col]
 
-                if cfg.models.model.num_classes == 1:
-                    labels = labels.unsqueeze(1)
+                        loss = loss + self.criterion(pred, gt) / self.cfg.model.params.num_labels
+                        y_pred = pred.float()
+                        y_preds.append(y_pred.cpu())
+                        labels.append(gt.cpu())
 
-                batch_size = inputs.size(0)
+                    total_loss += loss.item()   
 
-                outputs = self.model(inputs)
-                
-                if cfg.models.model.num_classes != 1:
-                    f = torch.nn.Softmax(dim=1)
-                    _outputs = f(outputs)
-                    _, _outputs = torch.max(_outputs, 1)
-               
-                loss = self.criterion(outputs,
-                                      labels)
-                
-                running_loss += loss.item()
-                dataset_size += batch_size
+        val_loss = total_loss/len(self.valid_dataloader)
 
-                valid_loss = running_loss / step
+        y_preds = torch.cat(y_preds, dim=0)
+        labels = torch.cat(labels)
+        val_wll = self.criterion2(y_preds, labels)
 
-                mem = torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0
-                current_lr = self.optimizer.param_groups[0]['lr']
-                pbar.set_postfix(valid_loss = f'{valid_loss:0.6f}',
-                                 lr = f'{current_lr:0.6f}',
-                                 gpu_memory = f'{mem:0.2f} GB')
-            
-        return valid_loss
+        print(f'val_loss:{val_loss:.6f}, val_wll:{val_wll:.6f}')
 
-@dataclass
-class Test(object):
-    
-    model: None
-    fold: int
-    num_sampling: int
-    test_loader: None
+#             wandb.log({"train_loss": train_loss,
+#                        "learning_rate": optimizer.param_groups[0]["lr"],
+#                        "valid_loss": val_loss, 
+#                        "valid_weighted_logloss": val_wll})
 
-    def test_one_epoch(self, cfg):
+        if val_loss < self.best_loss or val_wll < self.best_wll:
 
-        if cfg.models.model.mcdropout:
-            self.model.train()
+            self.es_step = 0
+
+            self.model.to(env.device)                
+
+            if val_loss < self.best_loss:
+                print(f'epoch:{epoch}, best loss updated from {self.best_loss:.6f} to {val_loss:.6f}')
+                self.best_loss = val_loss
+
+            if val_wll < self.best_wll:
+                print(f'epoch:{epoch}, best wll_metric updated from {self.best_wll:.6f} to {val_wll:.6f}')
+                self.best_wll = val_wll
+                fname = f'{self.cfg.directory.output_dir}/best_wll_model_fold-{fold}.pt'
+                torch.save(self.model.state_dict(), fname)
+
+            self.model.to(env.device)
+
         else:
-            self.model.eval()
-            
-        with torch.no_grad():
+            self.es_step += 1
+            if self.es_step >= self.cfg.trainer.early_stopping_epochs:
+                print('early stopping')
+            sys.exit(1)
                 
-            pbar = tqdm(enumerate(self.test_loader, start=1),
-                        total=len(self.test_loader), 
-                        desc='Test',
-                        disable=True)
-
-            for step, (inputs, labels, image_path, image_id) in pbar:                              
-                inputs = inputs.to(ConfigurationHelper.device)
-                labels = labels.tolist()
-                
-                # Predict
-                outputs = self.model(inputs)
-
-                # Classification
-                if cfg.models.model.num_classes != 1:
-                    f = torch.nn.Softmax(dim=1)
-                    outputs = f(outputs)
-                    _, _outputs = torch.max(outputs, 1)
-
-                    ConfigurationHelper.predicts_array[self.num_sampling].extend(outputs.tolist())
-                
-                # Regression
-                else:
-                    logit = outputs.tolist()
-                    
-                    outputs = EvaluationHelper.threshold_config(outputs)
-                    outputs = list(itertools.chain.from_iterable(outputs))
-                    logit = list(itertools.chain.from_iterable(logit))
-                    
-                    ConfigurationHelper.predicts_array[self.num_sampling].extend(outputs)
-                    ConfigurationHelper.predicts_array_float[self.num_sampling].extend(logit)
-
-                torch.cuda.empty_cache()
-
-                if self.num_sampling == cfg.models.inference.num_sampling-1:
-                    ConfigurationHelper.ground_truth.extend(labels)
-                    ConfigurationHelper.path_list.extend(image_id)
-                    ConfigurationHelper.fold_id.extend([self.fold+1]*len(labels))
+                #wandb.finish()
+        return self.best_wll 
