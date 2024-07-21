@@ -1,0 +1,48 @@
+{
+    "os": "macOS-10.16-x86_64-i386-64bit",
+    "python": "3.9.12",
+    "heartbeatAt": "2024-07-21T05:12:00.462362",
+    "startedAt": "2024-07-21T05:11:59.830482",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--multirun",
+        "directory=local",
+        "split=fold_0,fold_1"
+    ],
+    "state": "running",
+    "program": "-m run.train",
+    "codePathLocal": null,
+    "git": {
+        "remote": "git@github.com:xmr-is/rsna2024.git",
+        "commit": "1271ebbe746126beff3a089fb79b717bd4d2dff3"
+    },
+    "email": "mrkn0131@gmail.com",
+    "root": "/Users/markun/git/rsna2024",
+    "host": "MacBook-Pro-51.local",
+    "username": "markun",
+    "executable": "/Users/markun/opt/miniconda3/bin/python",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2000,
+        "min": 2000,
+        "max": 2000
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2000,
+            "min": 2000,
+            "max": 2000
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 465.62699127197266,
+            "used": 9.556190490722656
+        }
+    },
+    "memory": {
+        "total": 16.0
+    }
+}

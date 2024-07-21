@@ -31,8 +31,14 @@ class Trainer(object):
 
     def fit(self) -> None:
         for epoch in range(1, self.cfg.trainer.epochs):
+            print(f'----- epoch ----- : {epoch}')
             self.train(epoch)
-            self.valid(epoch)
+            self.valid(epoch)        
+            
+            wandb.log({
+                "best_loss": self.best_loss, 
+                "best_weighted_logloss": self.best_wll
+            })
 
     def train(self, epoch: int) -> torch.Tensor:
         self.model.train()
@@ -82,11 +88,14 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 if self.scheduler is not None:
                     self.scheduler.step()
-    
+
+            wandb.log({
+                "Train Loss": train_loss, 
+                "Learning Rate": self.scheduler.get_last_lr()[0]
+            })  
+
         train_loss = total_loss/len(self.train_dataloader)
         print(f'train_loss:{train_loss:.6f}') 
-        return train_loss
-
 
     def valid(self, epoch: int) -> torch.Tensor:
         self.model.eval()
@@ -130,16 +139,16 @@ class Trainer(object):
 
         print(f'val_loss:{val_loss:.6f}, val_wll:{val_wll:.6f}')
 
-#             wandb.log({"train_loss": train_loss,
-#                        "learning_rate": optimizer.param_groups[0]["lr"],
-#                        "valid_loss": val_loss, 
-#                        "valid_weighted_logloss": val_wll})
+        wandb.log({
+            "valid_loss": val_loss, 
+            "valid_weighted_logloss": val_wll
+        })
 
         if val_loss < self.best_loss or val_wll < self.best_wll:
 
             self.es_step = 0
 
-            self.model.to(env.device)                
+            self.model.to(env.device())                
 
             if val_loss < self.best_loss:
                 print(f'epoch:{epoch}, best loss updated from {self.best_loss:.6f} to {val_loss:.6f}')
@@ -151,13 +160,10 @@ class Trainer(object):
                 fname = f'{self.cfg.directory.output_dir}/best_wll_model_fold-{fold}.pt'
                 torch.save(self.model.state_dict(), fname)
 
-            self.model.to(env.device)
+            self.model.to(env.device())
 
         else:
             self.es_step += 1
             if self.es_step >= self.cfg.trainer.early_stopping_epochs:
                 print('early stopping')
             sys.exit(1)
-                
-                #wandb.finish()
-        return self.best_wll 

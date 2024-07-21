@@ -18,12 +18,13 @@ defaults:
 
 exp_name: dummy
 debug: true
+wandb: online
 num_folds: 5
-batch_size: 4
+batch_size: 1
 seed: 42
 
 trainer:
-  epochs: 50
+  epochs: 3
   early_stopping_epochs: 3
   use_amp: true
   num_workers: os.cpu_count()

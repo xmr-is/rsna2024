@@ -17,6 +17,7 @@ class DirectoryConfig:
 
 @dataclass
 class SplitConfig:
+    fold: int
     train_study_id: int
     valid_study_id: int
 
@@ -63,12 +64,15 @@ class CriterionConfig:
 class TrainConfig:
     exp_name: str
     debug: bool
+    wandb: str
     num_folds: int
     batch_size: int
     seed: int
     common: CommonConfig
     directory: DirectoryConfig
     dataset: DatasetConfig
+    prepare_data: PrepareDataConfig
+    split: SplitConfig
     trainer: TrainerConfig
     model: ModelConfig
     optimizer: OptimizerConfig

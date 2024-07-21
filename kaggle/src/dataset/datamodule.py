@@ -20,7 +20,7 @@ class TrainDataModule(object):
         self.valid_df = valid_df
 
     def prepare_loader(self) -> Tuple[DataLoader, DataLoader]:
-        return self.train_dataloader, self.valid_dataloader
+        return self.train_dataloader(), self.valid_dataloader()
 
     def train_dataloader(self) -> DataLoader:
         train_dataset = TrainDataset(

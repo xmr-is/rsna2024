@@ -11,8 +11,8 @@ class PrepareData(object):
         self.cfg = cfg
 
     def separate_df(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        train_df = df[df['train_study_id'].isin(self.cfg.split.train_study_id)]
-        valid_df = df[df['valid_study_id'].isin(self.cfg.split.valid_study_id)]
+        train_df = df[df['study_id'].isin(self.cfg.split.train_study_id)]
+        valid_df = df[df['study_id'].isin(self.cfg.split.valid_study_id)]
         return train_df, valid_df
 
     def read_csv(self) -> pd.DataFrame:

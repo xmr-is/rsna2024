@@ -1,5 +1,5 @@
-base_dir: /Users/markun/kaggle/data
-input_dir: /Users/markun/kaggle
-output_dir: /Users/markun/kaggle/outputs
-image_dir: /Users/markun/kaggle/data
-submission_dir: /kaggle/outputs
+base_dir: /Users/markun/git/rsna2024/kaggle/data
+input_dir: /Users/markun/git/rsna2024/kaggle
+output_dir: /Users/markun/git/rsna2024/kaggle/outputs
+image_dir: /Users/markun/git/rsna2024/kaggle/data
+submission_dir: /Users/markun/git/rsna2024/kaggle/outputs
