@@ -1,3 +1,5 @@
+from typing import Any
+
 import wandb
 import torch.nn as nn
 
@@ -9,7 +11,7 @@ class WandBHelper(object):
         self.cfg = cfg
         self.model = model
 
-    def wandb_config(self):
+    def wandb_config(self) -> Any:
         run = wandb.init(
             mode = self.cfg.wandb,
             project = self.cfg.exp_name, 

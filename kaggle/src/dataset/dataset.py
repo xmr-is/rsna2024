@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from glob import glob
+import torch
+from typing import Tuple
 from PIL import Image
 
 from torch.utils.data import Dataset
@@ -13,7 +15,7 @@ class TrainDataset(Dataset):
             df: pd.DataFrame, 
             phase='train', 
             transform=None
-        ):
+        ) -> None:
         self.cfg = cfg
         self.df = df
         self.transform = transform
@@ -22,7 +24,7 @@ class TrainDataset(Dataset):
     def __len__(self) -> int:
         return len(self.df)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         
         """
         512x512x30の3次元の配列を作成、
@@ -103,7 +105,7 @@ class ValidDataset(Dataset):
             df: pd.DataFrame, 
             phase='valid', 
             transform=None
-        ):
+        ) -> None:
         self.cfg = cfg
         self.df = df
         self.transform = transform
@@ -112,7 +114,7 @@ class ValidDataset(Dataset):
     def __len__(self) -> int:
         return len(self.df)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         
         """
         512x512x30の3次元の配列を作成、

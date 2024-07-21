@@ -1,10 +1,11 @@
+import torch
 import torch.nn as nn
 import timm
 
 from run.config import ModelConfig
 
 class RSNA24Model(nn.Module):
-    def __init__(self, cfg:ModelConfig):
+    def __init__(self, cfg:ModelConfig) -> None:
         # 3(Axial,sagittalT1,sagittalT2) x 
         # 5(l1-2,l2-3,l3-4,l4-5,l5-s1) x
         # 5(spinal_canal_stenosis,{left,right_}neural_foraminal_narrowing, {left,right_}subarticular_stenosis)
@@ -19,6 +20,6 @@ class RSNA24Model(nn.Module):
             global_pool='avg'
         )
     
-    def forward(self, x):
+    def forward(self, x) -> torch.Tensor:
         x = self.model(x)
         return x
