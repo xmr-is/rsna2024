@@ -1,7 +1,7 @@
 import os
 import math
 import sys
-from typing import ClassVar
+from typing import ClassVar, Any
 from collections import OrderedDict
 from dataclasses import dataclass
 import itertools
@@ -18,6 +18,7 @@ from src.utils.environment_helper import EnvironmentHelper
 @dataclass
 class Trainer(object):
     cfg: TrainConfig
+    run: Any
     model: nn.Module
     train_dataloader: DataLoader
     valid_dataloader: DataLoader
@@ -35,12 +36,12 @@ class Trainer(object):
             self.train(epoch)
             self.valid(epoch)        
             
-            wandb.log({
+            self.run.log({
                 "best_loss": self.best_loss, 
                 "best_weighted_logloss": self.best_wll
             })
 
-    def train(self, epoch: int) -> torch.Tensor:
+    def train(self, epoch: int) -> None:
         self.model.train()
         total_loss = 0
         env = EnvironmentHelper(self.cfg)
@@ -89,7 +90,7 @@ class Trainer(object):
                 if self.scheduler is not None:
                     self.scheduler.step()
 
-            wandb.log({
+            self.run.log({
                 "Train Loss": train_loss, 
                 "Learning Rate": self.scheduler.get_last_lr()[0]
             })  
@@ -97,7 +98,7 @@ class Trainer(object):
         train_loss = total_loss/len(self.train_dataloader)
         print(f'train_loss:{train_loss:.6f}') 
 
-    def valid(self, epoch: int) -> torch.Tensor:
+    def valid(self, epoch: int) -> None:
         self.model.eval()
         env = EnvironmentHelper(self.cfg)
         autocast = env.autocast()
@@ -139,7 +140,7 @@ class Trainer(object):
 
         print(f'val_loss:{val_loss:.6f}, val_wll:{val_wll:.6f}')
 
-        wandb.log({
+        self.run.log({
             "valid_loss": val_loss, 
             "valid_weighted_logloss": val_wll
         })
@@ -157,7 +158,7 @@ class Trainer(object):
             if val_wll < self.best_wll:
                 print(f'epoch:{epoch}, best wll_metric updated from {self.best_wll:.6f} to {val_wll:.6f}')
                 self.best_wll = val_wll
-                fname = f'{self.cfg.directory.output_dir}/best_wll_model_fold-{fold}.pt'
+                fname = f'{self.cfg.directory.output_dir}/best_wll_model_fold-{self.cfg.split.fold}.pt'
                 torch.save(self.model.state_dict(), fname)
 
             self.model.to(env.device())

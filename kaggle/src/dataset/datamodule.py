@@ -5,7 +5,8 @@ import pandas as pd
 from torch.utils.data import DataLoader
 
 from run.config import TrainConfig
-from .dataset import TrainDataset, ValidDataset
+from src.augmentation.augmentation import Augmentation
+from src.dataset.dataset import TrainDataset, ValidDataset
 
 class TrainDataModule(object):
 
@@ -26,6 +27,7 @@ class TrainDataModule(object):
         train_dataset = TrainDataset(
             cfg=self.cfg,
             df=self.train_df,
+            transform=Augmentation.transform_train
         )
         train_loader = DataLoader(
             train_dataset,
@@ -41,6 +43,7 @@ class TrainDataModule(object):
         valid_dataset = ValidDataset(
             cfg=self.cfg,
             df=self.valid_df,
+            transform=Augmentation.transform_valid
         )
         valid_loader = DataLoader(
             valid_dataset,

@@ -37,7 +37,7 @@ class WandBHelper(object):
                 "max_grad_norm": self.cfg.criterion.max_grad_norm,
             },
             entity = "xxmrkn",
-            name = f"test"
+            name = f"test_fold{self.cfg.split.fold}"
         )
 
         wandb.watch(self.model, log_freq=100)

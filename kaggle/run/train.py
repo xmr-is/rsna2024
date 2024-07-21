@@ -19,7 +19,7 @@ from src.utils.wandb_helper import WandBHelper
 from src.utils.environment_helper import EnvironmentHelper
 
 @hydra.main(config_path="config", config_name="train", version_base=None)
-def main(cfg: TrainConfig):
+def main(cfg: TrainConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 
     env = EnvironmentHelper(cfg)
@@ -33,13 +33,14 @@ def main(cfg: TrainConfig):
 
     model = RSNA24Model(cfg).to(env.device())
     
-    wandb = WandBHelper(cfg, model).wandb_config()
+    run = WandBHelper(cfg, model).wandb_config()
 
     optimizer=AdamW(
         model.parameters(), 
         lr=cfg.optimizer.lr, 
         weight_decay=cfg.scheduler.wd
     )
+
     warmup_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
     num_total_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
     num_cycles = 0.475
@@ -56,15 +57,18 @@ def main(cfg: TrainConfig):
 
     trainer = Trainer(
         cfg=cfg,
+        run=run,
         model=model,
         train_dataloader=train_dataloader,
         valid_dataloader=valid_dataloader,
         optimizer=optimizer,
         scheduler=scheduler,
         criterion=criterion,
-        criterion2=criterion2
+        criterion2=criterion2,
     )
     trainer.fit()
+
+    run.finish()
 
 
 if __name__ == "__main__":

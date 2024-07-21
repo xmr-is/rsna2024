@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+cvt_png
+cvt_png/
 
 # Distribution / packaging
 .Python
