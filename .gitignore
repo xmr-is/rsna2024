@@ -5,8 +5,10 @@ __pycache__/
 
 # C extensions
 *.so
-cvt_png
 cvt_png/
+.hydra/
+wandb/
+*.pt
 
 # Distribution / packaging
 .Python

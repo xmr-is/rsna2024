@@ -14,11 +14,12 @@ class TrainDataModule(object):
         self, 
         cfg: TrainConfig, 
         train_df: pd.DataFrame,
-        valid_df: pd.DataFrame
+        valid_df: pd.DataFrame,
     ) -> None:
         self.cfg = cfg
         self.train_df = train_df
         self.valid_df = valid_df
+        self.augmentation = Augmentation(self.cfg)
 
     def prepare_loader(self) -> Tuple[DataLoader, DataLoader]:
         return self.train_dataloader(), self.valid_dataloader()
@@ -27,7 +28,7 @@ class TrainDataModule(object):
         train_dataset = TrainDataset(
             cfg=self.cfg,
             df=self.train_df,
-            transform=Augmentation.transform_train
+            transform=self.augmentation.transform_train()
         )
         train_loader = DataLoader(
             train_dataset,
@@ -43,7 +44,7 @@ class TrainDataModule(object):
         valid_dataset = ValidDataset(
             cfg=self.cfg,
             df=self.valid_df,
-            transform=Augmentation.transform_valid
+            transform=self.augmentation.transform_valid()
         )
         valid_loader = DataLoader(
             valid_dataset,

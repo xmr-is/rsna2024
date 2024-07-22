@@ -31,12 +31,17 @@ class Trainer(object):
     es_step: int = 0 
 
     def fit(self) -> None:
-        for epoch in range(1, self.cfg.trainer.epochs):
-            print(f'----- epoch ----- : {epoch}')
-            self.train(epoch)
-            self.valid(epoch)        
+        for epoch in range(1, self.cfg.trainer.epochs+1):
+            print(f'----- epoch ----- : {epoch} ')
+            print(f'----- fold ----- : {self.cfg.split.fold+1}')
+            train_loss = self.train(epoch)
+            valid_loss, valid_wll = self.valid(epoch)        
             
             self.run.log({
+                "Train Loss": train_loss, 
+                "Learning Rate": self.scheduler.get_last_lr()[0],
+                "valid_loss": valid_loss, 
+                "valid_weighted_logloss": valid_wll,
                 "best_loss": self.best_loss, 
                 "best_weighted_logloss": self.best_wll
             })
@@ -54,8 +59,8 @@ class Trainer(object):
             disable=True
         )
         for idx, (inputs, labels) in pbar:         
-            inputs = inputs.to(env.device)
-            labels  = labels.to(env.device)
+            inputs = inputs.to(env.device())
+            labels  = labels.to(env.device())
             
             with autocast:
                 loss = 0
@@ -89,14 +94,12 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 if self.scheduler is not None:
                     self.scheduler.step()
-
-            self.run.log({
-                "Train Loss": train_loss, 
-                "Learning Rate": self.scheduler.get_last_lr()[0]
-            })  
-
+            
         train_loss = total_loss/len(self.train_dataloader)
         print(f'train_loss:{train_loss:.6f}') 
+
+        return train_loss
+
 
     def valid(self, epoch: int) -> None:
         self.model.eval()
@@ -104,7 +107,7 @@ class Trainer(object):
         autocast = env.autocast()
         total_loss = 0
         y_preds = []
-        labels = []
+        label = []
 
         with torch.no_grad():
             pbar = tqdm(
@@ -114,8 +117,8 @@ class Trainer(object):
                 disable=True
             )
             for idx, (inputs, labels) in pbar:         
-                inputs = inputs.to(env.device)
-                labels  = labels.to(env.device)
+                inputs = inputs.to(env.device())
+                labels  = labels.to(env.device())
 
                 with autocast:
                     loss = 0
@@ -128,22 +131,17 @@ class Trainer(object):
                         loss = loss + self.criterion(pred, gt) / self.cfg.model.params.num_labels
                         y_pred = pred.float()
                         y_preds.append(y_pred.cpu())
-                        labels.append(gt.cpu())
+                        label.append(gt.cpu())
 
                     total_loss += loss.item()   
 
         val_loss = total_loss/len(self.valid_dataloader)
 
         y_preds = torch.cat(y_preds, dim=0)
-        labels = torch.cat(labels)
-        val_wll = self.criterion2(y_preds, labels)
+        label = torch.cat(label)
+        val_wll = self.criterion2(y_preds, label)
 
         print(f'val_loss:{val_loss:.6f}, val_wll:{val_wll:.6f}')
-
-        self.run.log({
-            "valid_loss": val_loss, 
-            "valid_weighted_logloss": val_wll
-        })
 
         if val_loss < self.best_loss or val_wll < self.best_wll:
 
@@ -164,7 +162,10 @@ class Trainer(object):
             self.model.to(env.device())
 
         else:
-            self.es_step += 1
-            if self.es_step >= self.cfg.trainer.early_stopping_epochs:
-                print('early stopping')
-            sys.exit(1)
+            pass
+            # self.es_step += 1
+            # if self.es_step >= self.cfg.trainer.early_stopping_epochs:
+            #     print('early stopping')
+            # sys.exit(1)
+
+        return val_loss, val_wll

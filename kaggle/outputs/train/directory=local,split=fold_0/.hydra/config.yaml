@@ -20,10 +20,10 @@ criterion:
   name: CrossEntropyLoss
   max_grad_norm: None
 directory:
-  base_dir: /Users/markun/git/rsna2024/kaggle/data
-  input_dir: /Users/markun/git/rsna2024/kaggle
+  base_dir: /Users/markun/git/rsna2024/kaggle/
+  input_dir: /Users/markun/git/rsna2024/kaggle/data
   output_dir: /Users/markun/git/rsna2024/kaggle/outputs
-  image_dir: /Users/markun/git/rsna2024/kaggle/data
+  image_dir: /Users/markun/git/rsna2024/kaggle/data/cvt_png
   submission_dir: /Users/markun/git/rsna2024/kaggle/outputs
 common:
   conditions:

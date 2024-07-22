@@ -1,10 +1,11 @@
 exp_name: dummy
 debug: true
+wandb: online
 num_folds: 5
-batch_size: 4
+batch_size: 1
 seed: 42
 trainer:
-  epochs: 50
+  epochs: 3
   early_stopping_epochs: 3
   use_amp: true
   num_workers: os.cpu_count()
@@ -19,10 +20,10 @@ criterion:
   name: CrossEntropyLoss
   max_grad_norm: None
 directory:
-  base_dir: /Users/markun/git/rsna2024/kaggle/data
-  input_dir: /Users/markun/git/rsna2024/kaggle
+  base_dir: /Users/markun/git/rsna2024/kaggle/
+  input_dir: /Users/markun/git/rsna2024/kaggle/data
   output_dir: /Users/markun/git/rsna2024/kaggle/outputs
-  image_dir: /Users/markun/git/rsna2024/kaggle/data
+  image_dir: /Users/markun/git/rsna2024/kaggle/data/cvt_png
   submission_dir: /Users/markun/git/rsna2024/kaggle/outputs
 common:
   conditions:
@@ -54,6 +55,7 @@ model:
     num_labels: 25
     num_classes: 75
 split:
+  fold: 0
   train_study_id:
   - 4003253
   - 7143189
