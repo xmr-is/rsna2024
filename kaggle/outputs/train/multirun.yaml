@@ -113,11 +113,12 @@ hydra:
     - hydra.mode=MULTIRUN
     task:
     - directory=local
+    - trainer.epochs=5
     - split=fold_0,fold_1
   job:
     name: train
     chdir: true
-    override_dirname: directory=local,split=fold_0,fold_1
+    override_dirname: directory=local,split=fold_0,fold_1,trainer.epochs=5
     id: ???
     num: ???
     config_name: train
@@ -166,7 +167,7 @@ num_folds: 5
 batch_size: 1
 seed: 42
 trainer:
-  epochs: 3
+  epochs: 5
   early_stopping_epochs: 3
   use_amp: true
   num_workers: os.cpu_count()

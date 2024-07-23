@@ -16,7 +16,7 @@ class PrepareData(object):
         return train_df, valid_df
 
     def read_csv(self) -> pd.DataFrame:
-        data_dir = Path(self.cfg.directory.input_dir)/'train.csv'
+        data_dir = Path(self.cfg.directory.base_dir)/'train.csv'
         df = pd.read_csv(data_dir)
         return self.preprocess_df(df)
     
