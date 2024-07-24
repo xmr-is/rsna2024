@@ -1,10 +1,12 @@
 import os
 import math
 import sys
-from typing import ClassVar, Any
+from typing import ClassVar, Any, Tuple
 from collections import OrderedDict
 from dataclasses import dataclass
 import itertools
+import numpy as np
+from sklearn.metrics import log_loss
 
 from tqdm import tqdm
 tqdm.pandas()
@@ -46,6 +48,23 @@ class Trainer(object):
                 "best_weighted_logloss": self.best_wll
             })
 
+    def cv(self) -> None:
+        print(f'----- fold ----- : {self.cfg.split.fold+1}')
+        y_preds, labels = self._valid()
+        
+        y_pred_np = y_preds.softmax(1).numpy()
+        labels_np = labels.numpy()
+        y_pred_nan = np.zeros((y_preds.shape[0], 1))
+        y_pred2 = np.concatenate([y_pred_nan, y_pred_np],axis=1)
+        weights = []
+        for l in labels:
+            if l==0: weights.append(1)
+            elif l==1: weights.append(2)
+            elif l==2: weights.append(4)
+            else: weights.append(0)
+        cv2 = log_loss(labels, y_pred2, normalize=True, sample_weight=weights)
+        print('cv score(Competition Metrics):', cv2)
+
     def train(self, epoch: int) -> None:
         self.model.train()
         total_loss = 0
@@ -56,7 +75,7 @@ class Trainer(object):
             enumerate(self.train_dataloader),
             total=len(self.train_dataloader),
             desc='Train',
-            disable=True
+            disable=False
         )
         for idx, (inputs, labels) in pbar:         
             inputs = inputs.to(env.device())
@@ -114,7 +133,7 @@ class Trainer(object):
                 enumerate(self.valid_dataloader),
                 total=len(self.valid_dataloader),
                 desc='Valid',
-                disable=True
+                disable=False
             )
             for idx, (inputs, labels) in pbar:         
                 inputs = inputs.to(env.device())
@@ -169,3 +188,45 @@ class Trainer(object):
             # sys.exit(1)
 
         return val_loss, val_wll
+    
+    def _valid(self) -> Tuple[torch.Tensor, torch.Tensor]:
+        fname = f'{self.cfg.directory.output_dir}/best_wll_model_fold-{self.cfg.split.fold}.pt'
+        self.model.load_state_dict(
+            torch.load(fname)
+        ).to(env.device())
+        
+        self.model.eval()
+        
+        env = EnvironmentHelper(self.cfg)
+        autocast = env.autocast()
+        cv = 0
+        y_preds = []
+        label = []
+
+        with torch.no_grad():
+            pbar = tqdm(
+                enumerate(self.valid_dataloader),
+                total=len(self.valid_dataloader),
+                desc='Valid',
+                disable=True
+            )
+            for idx, (inputs, labels) in enumerate(pbar):
+                
+                inputs = inputs.to(env.device())
+                labels = labels.to(env.device())
+                    
+                with autocast:
+                    outputs = self.model(inputs)
+                    for col in range(self.cfg.model.params.num_labels):
+                        pred = outputs[:,col*3:col*3+3]
+                        gt = labels[:,col] 
+                        y_pred = pred.float()
+                        y_preds.append(y_pred.cpu())
+                        label.append(gt.cpu())
+        y_preds = torch.cat(y_preds)
+        label = torch.cat(label)
+
+        cv = self.criterion2(y_preds, label)
+        print('cv score:', cv.item())
+
+        return y_preds, label
