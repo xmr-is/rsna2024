@@ -190,10 +190,14 @@ class Trainer(object):
         return val_loss, val_wll
     
     def _valid(self) -> Tuple[torch.Tensor, torch.Tensor]:
+        env = EnvironmentHelper(self.cfg)
+        autocast = env.autocast()
+        
         fname = f'{self.cfg.directory.output_dir}/best_wll_model_fold-{self.cfg.split.fold}.pt'
         self.model.load_state_dict(
             torch.load(fname)
-        ).to(env.device())
+        )
+        self.model.to(env.device())
         
         self.model.eval()
         
