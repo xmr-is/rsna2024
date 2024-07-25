@@ -52,7 +52,8 @@ class TrainDataset(Dataset):
                 img = np.array(img)
                 x[..., i] = img.astype(np.uint8)
             except:
-                raise RuntimeError(f'failed to load on {st_id}, Sagittal T1')
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T1')
         
         # Sagittal T2/STIR
         for i in range(0, 10, 1):
@@ -62,7 +63,8 @@ class TrainDataset(Dataset):
                 img = np.array(img)
                 x[..., i+10] = img.astype(np.uint8)
             except:
-                raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
         
         # Axial T2
         axt2 = glob(f'{self.cfg.directory.image_dir}/{st_id}/Axial T2/*.png')
@@ -84,7 +86,8 @@ class TrainDataset(Dataset):
                 img = np.array(img)
                 x[..., i+20] = img.astype(np.uint8)
             except:
-                raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
 
         assert np.sum(x)>0
             
@@ -139,7 +142,8 @@ class ValidDataset(Dataset):
                 img = np.array(img)
                 x[..., i] = img.astype(np.uint8)
             except:
-                raise RuntimeError(f'failed to load on {st_id}, Sagittal T1')
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T1')
                 
         # Sagittal T2/STIR
         for i in range(0, 10, 1):
@@ -149,7 +153,8 @@ class ValidDataset(Dataset):
                 img = np.array(img)
                 x[..., i+10] = img.astype(np.uint8)
             except:
-                raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
                 
         # Axial T2
         axt2 = glob(f'{self.cfg.directory.image_dir}/{st_id}/Axial T2/*.png')
@@ -171,7 +176,8 @@ class ValidDataset(Dataset):
                 img = np.array(img)
                 x[..., i+20] = img.astype(np.uint8)
             except:
-                raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
             
         assert np.sum(x)>0
             
