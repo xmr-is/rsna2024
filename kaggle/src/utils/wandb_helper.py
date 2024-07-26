@@ -12,6 +12,7 @@ class WandBHelper(object):
         self.model = model
 
     def wandb_config(self) -> Any:
+        wandb.login(key='6a2084b93da3087a45bcccf07f48f2bffa7b2b0f')
         run = wandb.init(
             mode = self.cfg.wandb,
             project = self.cfg.exp_name, 
@@ -43,6 +44,5 @@ class WandBHelper(object):
         )
 
         wandb.watch(self.model, log_freq=100)
-        wandb.login(key='6a2084b93da3087a45bcccf07f48f2bffa7b2b0f')
 
         return run

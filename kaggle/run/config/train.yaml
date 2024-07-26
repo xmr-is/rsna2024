@@ -20,7 +20,7 @@ exp_name: dummy
 debug: true
 wandb: online
 num_folds: 5
-batch_size: 1
+batch_size: 8
 seed: 42
 
 trainer:

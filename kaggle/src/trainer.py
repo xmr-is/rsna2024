@@ -8,6 +8,7 @@ import itertools
 import numpy as np
 from sklearn.metrics import log_loss
 
+import wandb
 from tqdm import tqdm
 tqdm.pandas()
 import torch
@@ -15,6 +16,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from run.config import TrainConfig
+from src.dataset.datamodule import TrainDataModule
+from src.dataset.prepare_data import PrepareData
 from src.utils.environment_helper import EnvironmentHelper
 
 @dataclass
@@ -39,7 +42,7 @@ class Trainer(object):
             train_loss = self.train(epoch)
             valid_loss, valid_wll = self.valid(epoch)        
             
-            self.run.log({
+            wandb.log({
                 "Train Loss": train_loss, 
                 "Learning Rate": self.scheduler.get_last_lr()[0],
                 "valid_loss": valid_loss, 
@@ -198,24 +201,30 @@ class Trainer(object):
             torch.load(fname)
         )
         self.model.to(env.device())
-        
         self.model.eval()
         
-        env = EnvironmentHelper(self.cfg)
-        autocast = env.autocast()
         cv = 0
         y_preds = []
         label = []
 
+        weights = torch.tensor([1.0, 2.0, 4.0])
+        criterion2 = nn.CrossEntropyLoss(weight=weights)
+
+        prepare_data = PrepareData(self.cfg)
+        train_df, valid_df = prepare_data.read_csv()
+
+        datamodule = TrainDataModule(self.cfg, train_df, valid_df)
+        train_dataloader, valid_dataloader = datamodule.prepare_loader()
+       
         with torch.no_grad():
             pbar = tqdm(
-                enumerate(self.valid_dataloader),
-                total=len(self.valid_dataloader),
+                enumerate(valid_dataloader),
+                total=len(valid_dataloader),
                 desc='Valid',
                 disable=True
             )
             for idx, (inputs, labels) in enumerate(pbar):
-                
+                print(type(inputs))
                 inputs = inputs.to(env.device())
                 labels = labels.to(env.device())
                     
@@ -230,7 +239,7 @@ class Trainer(object):
         y_preds = torch.cat(y_preds)
         label = torch.cat(label)
 
-        cv = self.criterion2(y_preds, label)
+        cv = criterion2(y_preds, label)
         print('cv score:', cv.item())
 
         return y_preds, label

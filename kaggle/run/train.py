@@ -20,7 +20,9 @@ from src.utils.environment_helper import EnvironmentHelper
 
 @hydra.main(config_path="config", config_name="train", version_base=None)
 def main(cfg: TrainConfig) -> None:
-
+    yaml_cfg = OmegaConf.to_yaml(cfg)
+    print(yaml_cfg)
+    
     env = EnvironmentHelper(cfg)
     env.set_random_seed(cfg.seed)
 
@@ -66,7 +68,7 @@ def main(cfg: TrainConfig) -> None:
         criterion2=criterion2,
     )
     trainer.fit()
-    trainer.cv()
+    #trainer.cv()
 
     run.finish()
 
