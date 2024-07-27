@@ -6,11 +6,11 @@ conditions:
   - 'right_subarticular_stenosis'
 
 levels:
-  - 'L1/L2'
-  - 'L2/L3'
-  - 'L3/L4'
-  - 'L4/L5'
-  - 'L5/S1'
+  - 'l1_l2'
+  - 'l2_l3'
+  - 'l3_l4'
+  - 'l4_l5'
+  - 'l5_s1'
 
 label2id:
   'Normal/Mild': 0
