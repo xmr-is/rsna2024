@@ -102,6 +102,6 @@ class Inferencer(object):
         submission = pd.DataFrame()
         submission['row_id'] = row_names
         submission[labels] = predictions
-        submission.head(25)
+        print(submission.head(25))
         return submission
 
