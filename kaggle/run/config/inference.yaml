@@ -3,66 +3,26 @@ hydra:
     name: inference
     chdir: true
   run:
-    dir: ${dir.output_dir}/${hydra.job.name}/${hydra.job.override_dirname}
+    dir: ${directory.output_dir}/${hydra.job.name}/${hydra.job.override_dirname}
   sweep:
-    dir: ${dir.output_dir}/${hydra.job.name}
+    dir: ${directory.output_dir}/${hydra.job.name}
     subdir: ${hydra.job.override_dirname}
 
 defaults:
   - _self_
-  - dir: kaggle
-
-conditions:
-  - 'Spinal Canal Stenosis'
-  - 'Left Neural Foraminal Narrowing'
-  - 'Right Neural Foraminal Narrowing'
-  - 'Left Subarticular Stenosis'
-  - 'Right Subarticular Stenosis'
-
-levels:
-  - 'L1/L2'
-  - 'L2/L3'
-  - 'L3/L4'
-  - 'L4/L5'
-  - 'L5/S1'
-
-label2id:
-  'Normal/Mild': 0
-  'Moderate': 1
-  'Severe': 2
+  - directory: local
+  - common: label
+  - dataset: rsna24_v1
+  - model: convnextv2
+  - split: fold_0
 
 exp_name: dummy
+debug: true
+wandb: offline
 num_folds: 5
-image_size: 512
-batch_size: 4
-tgt_batch_size: 8
+batch_size: 1
 seed: 42
 
-model:
-  name: "convnextv2_base"
-  pretrained: true
-  in_channels: 30
-  num_labels: 25
-  num_classes: 75
-
-trainer:
-  epochs: 50
-  early_stopping_epochs: 3
+inferencer:
   use_amp: true
   num_workers: os.cpu_count()
-
-augmentation:
-  apply_aug: true
-  aug_prob: 0.75
-
-optimizer:
-  name: AdamW
-  lr: 1e-4
-
-scheduler:
-  name: CosineAnnealingWarmRestarts
-  wd: 1e-2
-
-criterion:
-  name: CrossEntropyLoss
-  max_grad_norm: None

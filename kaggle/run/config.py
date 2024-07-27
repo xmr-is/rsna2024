@@ -41,6 +41,11 @@ class TrainerConfig:
     grad_acc: int
 
 @dataclass
+class InferencerConfig:
+    use_amp: bool
+    num_workers: str
+
+@dataclass
 class ModelConfig:
     name: str
     params: dict[str, Any]
@@ -90,7 +95,5 @@ class InferenceConfig:
     directory: DirectoryConfig
     dataset: DatasetConfig
     trainer: TrainerConfig
+    inferencer: InferencerConfig
     model: ModelConfig
-    optimizer: OptimizerConfig
-    scheduler: SchedulerConfig
-    criterion: CriterionConfig

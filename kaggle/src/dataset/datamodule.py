@@ -1,18 +1,18 @@
 import os
-from typing import Tuple
+from typing import Tuple, List
 
 import pandas as pd
 from torch.utils.data import DataLoader
 
-from run.config import TrainConfig
+from run.config import InferenceConfig
 from src.augmentation.augmentation import Augmentation
-from src.dataset.dataset import TrainDataset, ValidDataset
+from src.dataset.dataset import TrainDataset, ValidDataset, InferenceDataset
 
 class TrainDataModule(object):
 
     def __init__(
         self, 
-        cfg: TrainConfig, 
+        cfg: InferenceConfig, 
         train_df: pd.DataFrame,
         valid_df: pd.DataFrame
     ) -> None:
@@ -54,3 +54,36 @@ class TrainDataModule(object):
             drop_last=True,
         )
         return valid_loader
+
+class InferenceDataModule(object):
+
+    def __init__(
+        self, 
+        cfg: InferenceConfig, 
+        test_df: pd.DataFrame,
+        study_ids: List[int]
+    ) -> None:
+        self.cfg = cfg
+        self.test_df = test_df
+        self.study_ids = study_ids
+
+    def prepare_loader(self) -> DataLoader:
+        return self.inference_dataloader()
+
+    def inference_dataloader(self) -> DataLoader:
+        inference_dataset = InferenceDataset(
+            cfg=self.cfg,
+            df=self.test_df,
+            study_ids=self.study_ids,
+            transform=Augmentation(self.cfg).transform_valid()
+        )
+        inference_loader = DataLoader(
+            inference_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=False,
+            num_workers=eval(self.cfg.inferencer.num_workers),
+            pin_memory=True,
+            drop_last=True,
+        )
+        return inference_loader
+    

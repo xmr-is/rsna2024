@@ -44,7 +44,8 @@ class Trainer(object):
             
             wandb.log({
                 "Train Loss": train_loss, 
-                "Learning Rate": self.scheduler.get_last_lr()[0],
+                # "Learning Rate": self.scheduler.get_last_lr()[0],
+                "Leaning Rate": self.optimizer.param_groups[0]["lr"],
                 "valid_loss": valid_loss, 
                 "valid_weighted_logloss": valid_wll,
                 "best_loss": self.best_loss, 

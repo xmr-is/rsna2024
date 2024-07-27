@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List
 import pandas as pd
 
 from run.config import PrepareDataConfig
@@ -17,9 +17,9 @@ class PrepareData(object):
 
     def read_csv(self) -> pd.DataFrame:
         # local
-        # data_dir = Path(self.cfg.directory.input_dir)/'train.csv'
+        data_dir = Path(self.cfg.directory.input_dir)/'train.csv'
         # kaggle
-        data_dir = Path(self.cfg.directory.base_dir)/'train.csv'
+        # data_dir = Path(self.cfg.directory.base_dir)/'train.csv'
         df = pd.read_csv(data_dir)
         return self.preprocess_df(df)
     
@@ -29,3 +29,30 @@ class PrepareData(object):
         output_path = Path(self.cfg.directory.output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         return self.separate_df(df)
+
+class PrepareTestData(object):
+
+    def __init__(self, cfg: PrepareDataConfig) -> None:
+        self.cfg = cfg
+
+    # def separate_df(self, df: pd.DataFrame) -> pd.DataFrame:
+    #     test_df = df[df['study_id'].isin(self.cfg.split.test_study_id)]
+    #     return test_df
+
+    def read_test_data(self) -> Tuple[pd.DataFrame, List[int]]:
+        # local
+        data_dir = Path(self.cfg.directory.input_dir)/'test_series_descriptions.csv'
+        # kaggle
+        # data_dir = Path(self.cfg.directory.base_dir)/'test_series_descriptions.csv'
+        df = pd.read_csv(data_dir)
+        study_ids = list(df['study_id'].unique())
+        return df, study_ids
+    
+    def get_submission_labels(self) -> List[str]:
+        # local
+        data_dir = Path(self.cfg.directory.input_dir)/'sample_submission.csv'
+        # kaggle
+        # data_dir = Path(self.cfg.directory.base_dir)/'sample_submission.csv'
+        df = pd.read_csv(data_dir)
+        labels = list(df.columns[1:])
+        return labels
