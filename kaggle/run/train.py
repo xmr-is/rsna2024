@@ -43,7 +43,7 @@ def main(cfg: TrainConfig) -> None:
     )
 
     warmup_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
-    num_total_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
+    num_total_steps = cfg.trainer.epochs * len(train_dataloader) // cfg.trainer.grad_acc
     num_cycles = 0.475
     scheduler = get_cosine_schedule_with_warmup(
         optimizer,

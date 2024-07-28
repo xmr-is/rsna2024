@@ -70,7 +70,7 @@ class TrainDataset(Dataset):
                 # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
         
         # Axial T2
-        axt2 = glob(f'{self.cfg.directory.image_dir}/{st_id}/Axial T2/*.png')
+        axt2 = glob.glob(f'{self.cfg.directory.image_dir}/{st_id}/Axial T2/*.png')
         axt2 = sorted(axt2)
         
         # 10枚分抽出するため全枚数を10等分
@@ -160,7 +160,7 @@ class ValidDataset(Dataset):
                 # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
                 
         # Axial T2
-        axt2 = glob(f'{self.cfg.directory.image_dir}/{st_id}/Axial T2/*.png')
+        axt2 = glob.glob(f'{self.cfg.directory.image_dir}/{st_id}/Axial T2/*.png')
         axt2 = sorted(axt2)
         
         # 10枚分抽出するため全枚数を10等分
