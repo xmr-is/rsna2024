@@ -35,7 +35,6 @@ class Inferencer(object):
             self, 
             models: List[nn.Module]
         ) -> Tuple[List[np.ndarray], List[str]]:
-        print(f'----- fold ----- : {self.cfg.split.fold+1}')
         predictions, row_names = self.inference(models)        
         return predictions, row_names
 
@@ -63,7 +62,8 @@ class Inferencer(object):
                         row_names.append(st_id[0] + '_' + condition + '_' + level)
                             
                 with autocast:
-                    for model in models:
+                    for idx, model in enumerate(models):
+                        print(f'--- Now Predicting fold {idx} ---')
                         outputs = model(inputs)[0]
                         for col in range(self.cfg.model.params.num_labels):
                             output = outputs[col*3:col*3+3]

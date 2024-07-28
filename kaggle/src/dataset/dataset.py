@@ -219,7 +219,7 @@ class InferenceDataset(Dataset):
         pdf_ = pdf[pdf['series_description']==series_desc]
         allimgs = []
         for i, row in pdf_.iterrows():
-            pimgs = glob.glob(f'{self.cfg.directory.image_dir}/test_images/{study_id}/{row["series_id"]}/*.dcm')
+            pimgs = glob.glob(f'{self.cfg.directory.base_dir}/test_images/{study_id}/{row["series_id"]}/*.dcm')
             pimgs = sorted(pimgs, key=self.env.natural_keys)
             allimgs.extend(pimgs)
             
