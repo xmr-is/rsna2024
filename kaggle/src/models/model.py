@@ -81,10 +81,11 @@ class RSNA2024_ViT_HipOA(nn.Module):
         try:
             self.model.load_state_dict(
                 torch.load(
-                    f'/Users/markun/git/rsna2024/kaggle/src/models/weights/vit_weight.pth',
+                    f'/kaggle/input/rsna2024-python/kaggle/src/models/weights/vit_weight.pth',
                     map_location=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
                 )
             )
+            print("- Weight File Loaded !!")
         except Exception as e:
             print(e, "- Weight File Not Found !!")
     

@@ -37,8 +37,8 @@ class Trainer(object):
 
     def fit(self) -> None:
         for epoch in range(1, self.cfg.trainer.epochs+1):
-            print(f'----- epoch ----- : {epoch} ')
             print(f'----- fold ----- : {self.cfg.split.fold+1}')
+            print(f'----- epoch ----- : {epoch} ')
             train_loss = self.train(epoch)
             valid_loss, valid_wll = self.valid(epoch)        
             
