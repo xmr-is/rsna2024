@@ -10,6 +10,8 @@ test_images/
 .hydra/
 wandb/
 *.pt
+*.pth
+*.zip
 
 # Distribution / packaging
 .Python

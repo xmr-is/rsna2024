@@ -12,7 +12,7 @@ from transformers import get_cosine_schedule_with_warmup
 
 from run.config import TrainConfig
 from src.trainer import Trainer
-from src.models.model import RSNA24Model
+from src.models.model import RSNA2024_ViT_HipOA, RSNA24Model
 from src.dataset.prepare_data import PrepareData
 from src.dataset.datamodule import TrainDataModule
 from src.utils.wandb_helper import WandBHelper
@@ -32,7 +32,10 @@ def main(cfg: TrainConfig) -> None:
     datamodule = TrainDataModule(cfg, train_df, valid_df)
     train_dataloader, valid_dataloader = datamodule.prepare_loader()
 
-    model = RSNA24Model(cfg).to(env.device())
+    if cfg.model.name == 'vit_b_16':
+        model = RSNA2024_ViT_HipOA(cfg).to(env.device())
+    else:
+        model = RSNA24Model(cfg).to(env.device())
     
     run = WandBHelper(cfg, model).wandb_config()
 
