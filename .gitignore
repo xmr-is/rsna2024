@@ -12,6 +12,8 @@ wandb/
 *.pt
 *.pth
 *.zip
+*.csv
+*.npy
 
 # Distribution / packaging
 .Python

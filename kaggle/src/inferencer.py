@@ -77,6 +77,9 @@ class Inferencer(object):
     def amsambles(self) -> List[nn.Module]:
 
         models = []
+        # local
+        # CKPT_PATHS = glob.glob(f'{self.cfg.directory.base_dir}/outputs/best_wll_model_fold-*.pt')
+        # kaggle
         CKPT_PATHS = glob.glob(f'{self.cfg.directory.input_dir}/output/best_wll_model_fold-*.pt')
         CKPT_PATHS = sorted(CKPT_PATHS)
 

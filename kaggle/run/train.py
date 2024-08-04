@@ -71,7 +71,7 @@ def main(cfg: TrainConfig) -> None:
         criterion2=criterion2,
     )
     trainer.fit()
-    #trainer.cv()
+    trainer.cv()
 
     run.finish()
 

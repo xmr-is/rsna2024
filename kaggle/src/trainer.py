@@ -37,14 +37,13 @@ class Trainer(object):
 
     def fit(self) -> None:
         for epoch in range(1, self.cfg.trainer.epochs+1):
-            print(f'----- fold ----- : {self.cfg.split.fold+1}')
-            print(f'----- epoch ----- : {epoch} ')
+            print(f'----- fold ----- : {self.cfg.split.fold+1} / {self.cfg.num_folds}')
+            print(f'----- epoch ----- : {epoch} / {self.cfg.trainer.epochs}')
             train_loss = self.train(epoch)
             valid_loss, valid_wll = self.valid(epoch)        
             
             wandb.log({
                 "Train Loss": train_loss, 
-                # "Learning Rate": self.scheduler.get_last_lr()[0],
                 "Leaning Rate": self.optimizer.param_groups[0]["lr"],
                 "valid_loss": valid_loss, 
                 "valid_weighted_logloss": valid_wll,
@@ -53,21 +52,17 @@ class Trainer(object):
             })
 
     def cv(self) -> None:
-        print(f'----- fold ----- : {self.cfg.split.fold+1}')
+        print(f'----- Calculate CV ----- : {self.cfg.split.fold+1}')
         y_preds, labels = self._valid()
-        
-        y_pred_np = y_preds.softmax(1).numpy()
-        labels_np = labels.numpy()
-        y_pred_nan = np.zeros((y_preds.shape[0], 1))
-        y_pred2 = np.concatenate([y_pred_nan, y_pred_np],axis=1)
-        weights = []
-        for l in labels:
-            if l==0: weights.append(1)
-            elif l==1: weights.append(2)
-            elif l==2: weights.append(4)
-            else: weights.append(0)
-        cv2 = log_loss(labels, y_pred2, normalize=True, sample_weight=weights)
-        print('cv score(Competition Metrics):', cv2)
+
+        np.save(
+            f'{self.cfg.directory.output_dir}/preds_fold{self.cfg.split.fold}.npy', 
+            y_preds
+        )
+        np.save(
+            f'{self.cfg.directory.output_dir}/labels_fold{self.cfg.split.fold}.npy', 
+            labels
+        )
 
     def train(self, epoch: int) -> None:
         self.model.train()
@@ -81,7 +76,7 @@ class Trainer(object):
             desc='Train',
             disable=False
         )
-        for idx, (inputs, labels) in pbar:         
+        for idx, (inputs, labels) in pbar:
             inputs = inputs.to(env.device())
             labels  = labels.to(env.device())
             
@@ -156,7 +151,7 @@ class Trainer(object):
                         y_preds.append(y_pred.cpu())
                         label.append(gt.cpu())
 
-                    total_loss += loss.item()   
+                    total_loss += loss.item()
 
         val_loss = total_loss/len(self.valid_dataloader)
 
@@ -185,11 +180,10 @@ class Trainer(object):
             self.model.to(env.device())
 
         else:
-            pass
-            # self.es_step += 1
-            # if self.es_step >= self.cfg.trainer.early_stopping_epochs:
-            #     print('early stopping')
-            # sys.exit(1)
+            self.es_step += 1
+            if self.es_step >= self.cfg.trainer.early_stopping_epochs:
+                print('early stopping')
+                sys.exit(1)
 
         return val_loss, val_wll
     
@@ -222,10 +216,9 @@ class Trainer(object):
                 enumerate(valid_dataloader),
                 total=len(valid_dataloader),
                 desc='Valid',
-                disable=True
+                disable=False
             )
-            for idx, (inputs, labels) in enumerate(pbar):
-                print(type(inputs))
+            for idx, (inputs, labels) in pbar:
                 inputs = inputs.to(env.device())
                 labels = labels.to(env.device())
                     
@@ -237,10 +230,6 @@ class Trainer(object):
                         y_pred = pred.float()
                         y_preds.append(y_pred.cpu())
                         label.append(gt.cpu())
-        y_preds = torch.cat(y_preds)
-        label = torch.cat(label)
 
-        cv = criterion2(y_preds, label)
-        print('cv score:', cv.item())
 
         return y_preds, label
