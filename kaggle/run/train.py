@@ -21,7 +21,7 @@ from src.utils.environment_helper import EnvironmentHelper
 @hydra.main(config_path="config", config_name="train", version_base=None)
 def main(cfg: TrainConfig) -> None:
     yaml_cfg = OmegaConf.to_yaml(cfg)
-    print(yaml_cfg)
+    # print(yaml_cfg)
     
     env = EnvironmentHelper(cfg)
     env.set_random_seed(cfg.seed)
@@ -45,9 +45,9 @@ def main(cfg: TrainConfig) -> None:
         weight_decay=cfg.scheduler.wd
     )
 
-    warmup_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
+    warmup_steps = cfg.trainer.epochs/10 * len(train_dataloader)
     num_total_steps = cfg.trainer.epochs * len(train_dataloader) // cfg.trainer.grad_acc
-    num_cycles = 0.475
+    num_cycles = cfg.scheduler.num_cycles
     scheduler = get_cosine_schedule_with_warmup(
         optimizer,
         num_warmup_steps=warmup_steps,

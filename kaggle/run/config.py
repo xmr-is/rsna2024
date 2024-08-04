@@ -59,6 +59,7 @@ class OptimizerConfig:
 class SchedulerConfig:
     name: str
     wd: float
+    num_cycles: float
 
 @dataclass
 class CriterionConfig:

@@ -183,6 +183,7 @@ class Trainer(object):
             self.es_step += 1
             if self.es_step >= self.cfg.trainer.early_stopping_epochs:
                 print('early stopping')
+                self.cv()
                 sys.exit(1)
 
         return val_loss, val_wll
@@ -198,12 +199,8 @@ class Trainer(object):
         self.model.to(env.device())
         self.model.eval()
         
-        cv = 0
         y_preds = []
         label = []
-
-        weights = torch.tensor([1.0, 2.0, 4.0])
-        criterion2 = nn.CrossEntropyLoss(weight=weights)
 
         prepare_data = PrepareData(self.cfg)
         train_df, valid_df = prepare_data.read_csv()
