@@ -40,8 +40,7 @@ class Trainer(object):
             print(f'----- fold ----- : {self.cfg.split.fold+1} / {self.cfg.num_folds}')
             print(f'----- epoch ----- : {epoch} / {self.cfg.trainer.epochs}')
             train_loss = self.train(epoch)
-            valid_loss, valid_wll = self.valid(epoch)        
-            
+            valid_loss, valid_wll, stop_flag = self.valid(epoch)
             wandb.log({
                 "Train Loss": train_loss, 
                 "Leaning Rate": self.optimizer.param_groups[0]["lr"],
@@ -50,6 +49,8 @@ class Trainer(object):
                 "best_loss": self.best_loss, 
                 "best_weighted_logloss": self.best_wll
             })
+            if stop_flag:
+                break 
 
     def cv(self) -> None:
         print(f'----- Calculate CV ----- : {self.cfg.split.fold+1}')
@@ -126,6 +127,7 @@ class Trainer(object):
         total_loss = 0
         y_preds = []
         label = []
+        stop_flag = False
 
         with torch.no_grad():
             pbar = tqdm(
@@ -183,10 +185,10 @@ class Trainer(object):
             self.es_step += 1
             if self.es_step >= self.cfg.trainer.early_stopping_epochs:
                 print('early stopping')
-                self.cv()
-                sys.exit(1)
+                stop_flag = True
+                return val_loss, val_wll, stop_flag
 
-        return val_loss, val_wll
+        return val_loss, val_wll, stop_flag
     
     def _valid(self) -> Tuple[torch.Tensor, torch.Tensor]:
         env = EnvironmentHelper(self.cfg)
@@ -227,6 +229,5 @@ class Trainer(object):
                         y_pred = pred.float()
                         y_preds.append(y_pred.cpu())
                         label.append(gt.cpu())
-
 
         return y_preds, label
