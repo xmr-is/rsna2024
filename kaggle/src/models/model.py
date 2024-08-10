@@ -15,11 +15,32 @@ class RSNA24Model(nn.Module):
         self.cfg = cfg
         self.model = timm.create_model(
             model_name=self.cfg.model.name,
-            pretrained=self.cfg.model.params.pretrained, 
+            pretrained=self.cfg.model.params.pretrained,
             features_only=False,
-            in_chans=self.cfg.model.params.in_channels,
-            num_classes=self.cfg.model.params.num_classes,
-            global_pool='avg'
+            num_classe=10,
+            global_pool='avg',
+        )
+        self.load_weight()
+        self.init_layer()
+    
+    def load_weight(self):
+        self.model.load_state_dict(
+            torch.load(
+                "/kaggle/input/rsna2024-python/kaggle/src/models/weights/swin_large_patch4_window12_384.ms_in22k_0.pt",
+                map_location=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            )
+        )
+
+    def init_layer(self):
+        self.model.patch_embed.proj = nn.Conv2d(
+            in_channels=self.cfg.model.params.in_channels, 
+            out_channels=192, 
+            kernel_size=(4, 4), 
+            stride=(4, 4)
+        )
+        self.model.head.fc = nn.Linear(
+            in_features=1536,
+            out_features=self.cfg.model.params.num_classes
         )
     
     def forward(self, x) -> torch.Tensor:
