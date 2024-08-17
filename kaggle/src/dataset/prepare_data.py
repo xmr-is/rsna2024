@@ -16,7 +16,7 @@ class PrepareData(object):
         return train_df, valid_df
 
     def read_csv(self) -> pd.DataFrame:
-        if self.cfg.env:
+        if self.cfg.env=='local':
             # local
             data_dir = Path(self.cfg.directory.input_dir)/'train.csv'
         else:
@@ -38,7 +38,7 @@ class PrepareTestData(object):
         self.cfg = cfg
 
     def read_test_data(self) -> Tuple[pd.DataFrame, List[int]]:
-        if self.cfg.env:
+        if self.cfg.env=='local':
             # local
             data_dir = Path(self.cfg.directory.input_dir)/'test_series_descriptions.csv'
         else:

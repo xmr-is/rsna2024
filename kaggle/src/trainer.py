@@ -169,22 +169,22 @@ class Trainer(object):
                         gt = labels[:,col]
                         scs_loss = scs_loss + self.criterion(pred, gt) / self.cfg.model.params.num_labels
                         y_pred_scs = pred.float()
-                        y_preds.append(y_pred_scs)
-                        label.append(gt)
+                        y_preds.append(y_pred_scs.cpu())
+                        label.append(gt.cpu())
                     for col in range(10):
                         pred = outputs[1][:,col*3:col*3+3]
                         gt = labels[:,col]
                         nfn_loss = nfn_loss + self.criterion(pred, gt) / self.cfg.model.params.num_labels
                         y_pred_nfn = pred.float()
-                        y_preds.append(y_pred_nfn)
-                        label.append(gt)
+                        y_preds.append(y_pred_nfn.cpu())
+                        label.append(gt.cpu())
                     for col in range(10):
                         pred = outputs[2][:,col*3:col*3+3]
                         gt = labels[:,col]
                         ss_loss = ss_loss + self.criterion(pred, gt) / self.cfg.model.params.num_labels
                         y_pred_ss = pred.float()
-                        y_preds.append(y_pred_ss)
-                        label.append(gt)
+                        y_preds.append(y_pred_ss.cpu())
+                        label.append(gt.cpu())
                     
                     loss = scs_loss + nfn_loss + ss_loss
 
@@ -262,19 +262,19 @@ class Trainer(object):
                         pred = outputs[0][:,col*3:col*3+3]
                         gt = labels[:,col]
                         y_pred_scs = pred.float()
-                        y_preds.append(y_pred_scs)
-                        label.append(gt)
+                        y_preds.append(y_pred_scs.cpu())
+                        label.append(gt.cpu())
                     for col in range(10):
                         pred = outputs[1][:,col*3:col*3+3]
                         gt = labels[:,col]
                         y_pred_nfn = pred.float()
-                        y_preds.append(y_pred_nfn)
-                        label.append(gt)
+                        y_preds.append(y_pred_nfn.cpu())
+                        label.append(gt.cpu())
                     for col in range(10):
                         pred = outputs[2][:,col*3:col*3+3]
                         gt = labels[:,col]
                         y_pred_ss = pred.float()
-                        y_preds.append(y_pred_ss)
-                        label.append(gt)
+                        y_preds.append(y_pred_ss.cpu())
+                        label.append(gt.cpu())
 
         return y_preds, label
