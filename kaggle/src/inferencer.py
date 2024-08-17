@@ -18,7 +18,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from run.config import InferenceConfig
-from src.models.model import RSNA24Model
+from src.models.model import RSNA2024Model3Heads, RSNA24Model
 from src.dataset.datamodule import InferenceDataModule
 from src.dataset.prepare_data import PrepareTestData
 from src.utils.environment_helper import InferenceEnvironmentHelper
@@ -64,11 +64,21 @@ class Inferencer(object):
                 with autocast:
                     for idx, model in enumerate(models):
                         print(f'--- Now Predicting fold {idx} ---')
-                        outputs = model(inputs)[0]
-                        for col in range(self.cfg.model.params.num_labels):
-                            output = outputs[col*3:col*3+3]
-                            pred = output.float().softmax(0).cpu().numpy()
-                            pred_per_study[col] += pred / len(models)
+                        outputs = model(inputs)
+
+                        for col in range(5):
+                            output = outputs[0][:,col*3:col*3+3]
+                            y_pred_scs = output.float().softmax(1).cpu().numpy().squeeze(0)
+                            pred_per_study[col] += y_pred_scs / len(models)
+                        for col in range(10):
+                            output = outputs[1][:,col*3:col*3+3]
+                            y_pred_nfn = output.float().softmax(1).cpu().numpy().squeeze(0)
+                            pred_per_study[col+5] += y_pred_nfn / len(models)
+                        for col in range(10):
+                            output = outputs[2][:,col*3:col*3+3]
+                            y_pred_ss = output.float().softmax(1).cpu().numpy().squeeze(0)
+                            pred_per_study[col+15] += y_pred_ss / len(models)
+
                     predictions.append(pred_per_study)
         predictions = np.concatenate(predictions, axis=0)
                     
@@ -77,15 +87,19 @@ class Inferencer(object):
     def amsambles(self) -> List[nn.Module]:
 
         models = []
-        # local
-        # CKPT_PATHS = glob.glob(f'{self.cfg.directory.base_dir}/outputs/best_wll_model_fold-*.pt')
-        # kaggle
-        CKPT_PATHS = glob.glob(f'{self.cfg.directory.input_dir}/output/best_wll_model_fold-*.pt')
+        if self.cfg.env=='local':
+            # local
+            CKPT_PATHS = glob.glob(f'{self.cfg.directory.base_dir}/outputs/best_wll_model_fold-*.pt')
+        else:
+            # kaggle
+            CKPT_PATHS = glob.glob(f'{self.cfg.directory.input_dir}/output/best_wll_model_fold-*.pt')
         CKPT_PATHS = sorted(CKPT_PATHS)
+
+        assert len(CKPT_PATHS)!=0
 
         for idx, cp in enumerate(CKPT_PATHS):
             print(f'loading {cp}...')
-            model = RSNA24Model(
+            model = RSNA2024Model3Heads(
                 cfg=self.cfg
             )
             model.load_state_dict(torch.load(cp))

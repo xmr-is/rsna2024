@@ -1,5 +1,7 @@
 import torch
+import copy
 import torch.nn as nn
+from typing import Tuple
 import timm
 
 from torchvision import models
@@ -17,16 +19,16 @@ class RSNA24Model(nn.Module):
             model_name=self.cfg.model.name,
             pretrained=self.cfg.model.params.pretrained,
             features_only=False,
-            num_classe=10,
+            num_classes=10,
             global_pool='avg',
         )
-        self.load_weight()
+        # self.load_weight()
         self.init_layer()
     
     def load_weight(self):
         self.model.load_state_dict(
             torch.load(
-                "/kaggle/input/rsna2024-python/kaggle/src/models/weights/swin_large_patch4_window12_384.ms_in22k_0.pt",
+                "/kaggle/input/spine-landmark-swin/swin_large_patch4_window12_384.ms_in22k_0.pt",
                 map_location=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             )
         )
@@ -46,6 +48,61 @@ class RSNA24Model(nn.Module):
     def forward(self, x) -> torch.Tensor:
         x = self.model(x)
         return x
+
+class RSNA2024Model3Heads(nn.Module):
+
+    def __init__(self, cfg: ModelConfig) -> None:
+        super(RSNA2024Model3Heads, self).__init__()
+        self.cfg = cfg
+        self.model = timm.create_model(
+            model_name=self.cfg.model.name,
+            pretrained=self.cfg.model.params.pretrained,
+            in_chans=self.cfg.model.params.in_channels,
+            features_only=False,
+            global_pool='avg'
+        )
+
+        # Classifier for spinal canal stenosis
+        self.scs_head = copy.deepcopy(self.model.head)
+        self.scs_head.fc = nn.Sequential(
+            nn.Linear(in_features=1536, out_features=768),
+            nn.GELU(),
+            nn.Dropout(p=0.0),
+            nn.Linear(in_features=768, out_features=384),
+            nn.GELU(),
+            nn.Linear(in_features=384, out_features=15),
+        )
+
+        # Classifier for neural foraminal narrowing
+        self.nfn_head = copy.deepcopy(self.model.head)
+        self.nfn_head.fc = nn.Sequential(
+            nn.Linear(in_features=1536, out_features=768),
+            nn.GELU(),
+            nn.Dropout(p=0.0),
+            nn.Linear(in_features=768, out_features=384),
+            nn.GELU(),
+            nn.Linear(in_features=384, out_features=30),
+        )
+
+        # Classifier for subarticular stenosis
+        self.ss_head = copy.deepcopy(self.model.head)
+        self.ss_head.fc = nn.Sequential(
+            nn.Linear(in_features=1536, out_features=768),
+            nn.GELU(),
+            nn.Dropout(p=0.0),
+            nn.Linear(in_features=768, out_features=384),
+            nn.GELU(),
+            nn.Linear(in_features=384, out_features=30),
+        )
+        
+        self.model.head = nn.Identity()
+
+    def forward(self, x) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        logit = self.model(x)
+        scs_logit = self.scs_head(logit)
+        nfn_logit = self.nfn_head(logit)
+        ss_logit = self.ss_head(logit)
+        return scs_logit, nfn_logit, ss_logit
 
 class RSNA2024_ViT_HipOA(nn.Module):
 

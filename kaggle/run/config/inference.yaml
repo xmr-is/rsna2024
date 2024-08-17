@@ -16,6 +16,7 @@ defaults:
   - model: convnextv2
   - split: fold_0
 
+env: local
 exp_name: dummy
 debug: true
 wandb: offline

@@ -19,6 +19,7 @@ from src.utils.environment_helper import EnvironmentHelper
 @hydra.main(config_path="config", config_name="inference", version_base=None)
 def main(cfg: InferenceConfig):
     yaml_cfg = OmegaConf.to_yaml(cfg)
+    print(yaml_cfg)
     
     env = EnvironmentHelper(cfg)
     env.set_random_seed(cfg.seed)

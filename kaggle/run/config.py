@@ -68,6 +68,7 @@ class CriterionConfig:
 
 @dataclass
 class TrainConfig:
+    env: str
     exp_name: str
     debug: bool
     wandb: str
@@ -87,6 +88,7 @@ class TrainConfig:
 
 @dataclass
 class InferenceConfig:
+    env: str
     exp_name: str
     debug: bool
     num_folds: int

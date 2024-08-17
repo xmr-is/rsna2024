@@ -16,6 +16,7 @@ defaults:
   - model: convnextv2
   - split: fold_0
 
+env: local
 exp_name: dummy
 debug: true
 wandb: online
@@ -37,7 +38,7 @@ optimizer:
 scheduler:
   name: CosineAnnealingWarmRestarts
   wd: 1e-2
-  num_cycles: 0.475
+  num_cycles: 0.5
 
 criterion:
   name: CrossEntropyLoss

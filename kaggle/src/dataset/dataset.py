@@ -222,7 +222,6 @@ class InferenceDataset(Dataset):
             pimgs = glob.glob(f'{self.cfg.directory.base_dir}/test_images/{study_id}/{row["series_id"]}/*.dcm')
             pimgs = sorted(pimgs, key=self.env.natural_keys)
             allimgs.extend(pimgs)
-            
         return allimgs
     
     def read_dcm_ret_arr(self, src_path) -> np.ndarray:
