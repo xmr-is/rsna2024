@@ -92,17 +92,17 @@ class Trainer(object):
                 for col in range(5):
                     pred = outputs[0][:,col*3:col*3+3]
                     gt = labels[:,col]
-                    scs_loss = scs_loss + self.criterion(pred, gt)
+                    scs_loss = scs_loss + self.criterion(pred, gt) / 5
                 for col in range(10):
                     pred = outputs[1][:,col*3:col*3+3]
                     gt = labels[:,col]
-                    nfn_loss = nfn_loss + self.criterion(pred, gt)
+                    nfn_loss = nfn_loss + self.criterion(pred, gt) / 10
                 for col in range(10):
                     pred = outputs[2][:,col*3:col*3+3]
                     gt = labels[:,col]
-                    ss_loss = ss_loss + self.criterion(pred, gt)
+                    ss_loss = ss_loss + self.criterion(pred, gt) / 10
 
-                loss = (scs_loss + nfn_loss + ss_loss) / self.cfg.model.params.num_labels
+                loss = (scs_loss + nfn_loss + ss_loss)/3
                 total_loss  += loss.item()
                 
                 if self.cfg.trainer.grad_acc > 1:
@@ -167,26 +167,26 @@ class Trainer(object):
                     for col in range(5):
                         pred = outputs[0][:,col*3:col*3+3]
                         gt = labels[:,col]
-                        scs_loss = scs_loss + self.criterion(pred, gt)
+                        scs_loss = scs_loss + self.criterion(pred, gt) / 5
                         y_pred_scs = pred.float()
                         y_preds.append(y_pred_scs.cpu())
                         label.append(gt.cpu())
                     for col in range(10):
                         pred = outputs[1][:,col*3:col*3+3]
                         gt = labels[:,col]
-                        nfn_loss = nfn_loss + self.criterion(pred, gt)
+                        nfn_loss = nfn_loss + self.criterion(pred, gt) / 10
                         y_pred_nfn = pred.float()
                         y_preds.append(y_pred_nfn.cpu())
                         label.append(gt.cpu())
                     for col in range(10):
                         pred = outputs[2][:,col*3:col*3+3]
                         gt = labels[:,col]
-                        ss_loss = ss_loss + self.criterion(pred, gt)
+                        ss_loss = ss_loss + self.criterion(pred, gt) / 10
                         y_pred_ss = pred.float()
                         y_preds.append(y_pred_ss.cpu())
                         label.append(gt.cpu())
                     
-                    loss = (scs_loss + nfn_loss + ss_loss)/self.cfg.model.params.num_labels
+                    loss = (scs_loss + nfn_loss + ss_loss)/3
 
                     total_loss += loss.item()
 
