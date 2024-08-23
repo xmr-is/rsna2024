@@ -39,7 +39,7 @@ class Trainer(object):
         for epoch in range(1, self.cfg.trainer.epochs+1):
             print(f'----- fold ----- : {self.cfg.split.fold+1} / {self.cfg.num_folds}')
             print(f'----- epoch ----- : {epoch} / {self.cfg.trainer.epochs}')
-            train_loss = self.train(epoch)
+            train_loss, train_scs_loss,train_nfn_loss,train_ss_loss = self.train(epoch)
             valid_loss, valid_wll, stop_flag = self.valid(epoch)
             wandb.log({
                 "Train Loss": train_loss, 
@@ -68,6 +68,9 @@ class Trainer(object):
     def train(self, epoch: int) -> None:
         self.model.train()
         total_loss = 0
+        total_scs_loss = 0
+        total_nfn_loss = 0
+        total_ss_loss = 0
         env = EnvironmentHelper(self.cfg)
         grad_scaler = env.scaler()
         autocast = env.autocast()
@@ -104,6 +107,9 @@ class Trainer(object):
 
                 loss = (scs_loss + nfn_loss + ss_loss)/3
                 total_loss  += loss.item()
+                total_scs_loss  += scs_loss.item()
+                total_nfn_loss  += nfn_loss.item()
+                total_ss_loss  += ss_loss.item()
                 
                 if self.cfg.trainer.grad_acc > 1:
                     loss = loss / self.cfg.trainer.grad_acc
@@ -130,9 +136,15 @@ class Trainer(object):
                     self.scheduler.step()
             
         train_loss = total_loss/len(self.train_dataloader)
+        train_scs_loss = total_scs_loss/len(self.train_dataloader)
+        train_nfn_loss = total_nfn_loss/len(self.train_dataloader)
+        train_ss_loss = total_ss_loss/len(self.train_dataloader)
         print(f'train_loss:{train_loss:.6f}') 
+        print(f'train_scs_loss:{train_scs_loss:.6f}') 
+        print(f'train_nfn_loss:{train_nfn_loss:.6f}') 
+        print(f'train_ss_loss:{train_ss_loss:.6f}') 
 
-        return train_loss
+        return train_loss,train_scs_loss,train_nfn_loss,train_ss_loss
 
 
     def valid(self, epoch: int) -> None:
@@ -140,6 +152,9 @@ class Trainer(object):
         env = EnvironmentHelper(self.cfg)
         autocast = env.autocast()
         total_loss = 0
+        total_scs_loss = 0
+        total_nfn_loss = 0
+        total_ss_loss = 0
         y_preds = []
         label = []
         stop_flag = False
@@ -189,14 +204,23 @@ class Trainer(object):
                     loss = (scs_loss + nfn_loss + ss_loss)/3
 
                     total_loss += loss.item()
+                    total_scs_loss  += scs_loss.item()
+                    total_nfn_loss  += nfn_loss.item()
+                    total_ss_loss  += ss_loss.item()
 
         val_loss = total_loss/len(self.valid_dataloader)
+        val_scs_loss = total_scs_loss/len(self.valid_dataloader)
+        val_nfn_loss = total_nfn_loss/len(self.valid_dataloader)
+        val_ss_loss = total_ss_loss/len(self.valid_dataloader)
 
         y_preds = torch.cat(y_preds, dim=0)
         label = torch.cat(label)
         val_wll = self.criterion2(y_preds, label)
 
         print(f'val_loss:{val_loss:.6f}, val_wll:{val_wll:.6f}')
+        print(f'val_scs_loss:{val_scs_loss:.6f}') 
+        print(f'val_nfn_loss:{val_nfn_loss:.6f}') 
+        print(f'val_ss_loss:{val_ss_loss:.6f}') 
 
         if val_loss < self.best_loss or val_wll < self.best_wll:
 
