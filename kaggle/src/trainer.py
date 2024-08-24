@@ -39,15 +39,21 @@ class Trainer(object):
         for epoch in range(1, self.cfg.trainer.epochs+1):
             print(f'----- fold ----- : {self.cfg.split.fold+1} / {self.cfg.num_folds}')
             print(f'----- epoch ----- : {epoch} / {self.cfg.trainer.epochs}')
-            train_loss, train_scs_loss,train_nfn_loss,train_ss_loss = self.train(epoch)
-            valid_loss, valid_wll, stop_flag = self.valid(epoch)
+            train_loss, train_scs_loss, train_nfn_loss, train_ss_loss = self.train(epoch)
+            valid_loss, valid_wll, stop_flag, valid_scs_loss, valid_nfn_loss, valid_ss_loss = self.valid(epoch)
             wandb.log({
                 "Train Loss": train_loss, 
+                "Train scs Loss": train_scs_loss, 
+                "Train nfn Loss": train_nfn_loss, 
+                "Train ss Loss": train_ss_loss, 
                 "Leaning Rate": self.optimizer.param_groups[0]["lr"],
-                "valid_loss": valid_loss, 
-                "valid_weighted_logloss": valid_wll,
-                "best_loss": self.best_loss, 
-                "best_weighted_logloss": self.best_wll
+                "Valid Loss": valid_loss, 
+                "Valid scs Loss": valid_scs_loss, 
+                "Valid nfn Loss": valid_nfn_loss, 
+                "Valid ss Loss": valid_ss_loss, 
+                "Valid Weighted Logloss": valid_wll,
+                "Best Loss": self.best_loss, 
+                "Best Weighted Logloss": self.best_wll
             })
             if stop_flag:
                 break 
@@ -105,7 +111,7 @@ class Trainer(object):
                     gt = labels[:,col]
                     ss_loss = ss_loss + self.criterion(pred, gt) / 10
 
-                loss = (scs_loss + nfn_loss + ss_loss)/3
+                loss = scs_loss + nfn_loss + ss_loss
                 total_loss  += loss.item()
                 total_scs_loss  += scs_loss.item()
                 total_nfn_loss  += nfn_loss.item()
@@ -201,7 +207,7 @@ class Trainer(object):
                         y_preds.append(y_pred_ss.cpu())
                         label.append(gt.cpu())
                     
-                    loss = (scs_loss + nfn_loss + ss_loss)/3
+                    loss = scs_loss + nfn_loss + ss_loss
 
                     total_loss += loss.item()
                     total_scs_loss  += scs_loss.item()
@@ -212,7 +218,6 @@ class Trainer(object):
         val_scs_loss = total_scs_loss/len(self.valid_dataloader)
         val_nfn_loss = total_nfn_loss/len(self.valid_dataloader)
         val_ss_loss = total_ss_loss/len(self.valid_dataloader)
-
         y_preds = torch.cat(y_preds, dim=0)
         label = torch.cat(label)
         val_wll = self.criterion2(y_preds, label)
@@ -245,9 +250,9 @@ class Trainer(object):
             if self.es_step >= self.cfg.trainer.early_stopping_epochs:
                 print('early stopping')
                 stop_flag = True
-                return val_loss, val_wll, stop_flag
+                return val_loss, val_wll, stop_flag, val_scs_loss, val_nfn_loss, val_ss_loss
 
-        return val_loss, val_wll, stop_flag
+        return val_loss, val_wll, stop_flag, val_scs_loss, val_nfn_loss, val_ss_loss
     
     def _valid(self) -> Tuple[torch.Tensor, torch.Tensor]:
         env = EnvironmentHelper(self.cfg)

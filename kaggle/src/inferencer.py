@@ -121,4 +121,3 @@ class Inferencer(object):
         submission[labels] = predictions
         print(submission.head(25))
         return submission
-
