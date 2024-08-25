@@ -30,11 +30,12 @@ class TrainDataset(Dataset):
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         
         """
-        512x512x30の3次元の配列を作成、
-        in_chansはaxial,sagittal_t1,t2の3つそれぞれの画像10枚を組み合わせるための入れ物
+        512x512x40の3次元の配列を作成、
+        in_chansはaxial,sagittal_t1,t2,t2_extractedの4つそれぞれの画像10枚を組み合わせるための入れ物
         (512,512,0-9) -> Sagittal T1
         (512,512,10-19) -> Sagittal T2/STIR
         (512,512,20-29) -> Axial T2
+        (512,512,30-39) -> Sagittal T2/STIR
         """
         x = np.zeros((
             512,
@@ -51,6 +52,7 @@ class TrainDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T1/{i:03d}.png'
+                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i] = img.astype(np.uint8)
@@ -62,6 +64,7 @@ class TrainDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
+                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+10] = img.astype(np.uint8)
@@ -85,9 +88,22 @@ class TrainDataset(Dataset):
                 # 60枚あるAxial_T2から10枚を６スライスごとに抽出する、
                 # メモリ消費を抑える、計算コストを抑えるため？
                 p = axt2[max(0, int((j-0.5001).round()))]
+                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+20] = img.astype(np.uint8)
+            except:
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
+        
+        # Sagittal T2/STIR Extracted
+        for i in range(0, 10, 1):
+            try:
+                p = f'{self.cfg.directory.image_dir2}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
+                print(p)
+                img = Image.open(p).convert('L')
+                img = np.array(img)
+                x[..., i+30] = img.astype(np.uint8)
             except:
                 pass
                 # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
@@ -119,13 +135,6 @@ class ValidDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         
-        """
-        512x512x30の3次元の配列を作成、
-        in_chansはaxial,sagittal_t1,t2の3つそれぞれの画像10枚を組み合わせるための入れ物
-        (512,512,0-9) -> Sagittal T1
-        (512,512,10-19) -> Sagittal T2/STIR
-        (512,512,20-29) -> Axial T2
-        """
         x = np.zeros((
             512,
             512,
@@ -141,6 +150,7 @@ class ValidDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T1/{i:03d}.png'
+                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i] = img.astype(np.uint8)
@@ -152,6 +162,7 @@ class ValidDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
+                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+10] = img.astype(np.uint8)
@@ -175,9 +186,22 @@ class ValidDataset(Dataset):
                 # 60枚あるAxial_T2から10枚を６スライスごとに抽出する、
                 # メモリ消費を抑える、計算コストを抑えるため？
                 p = axt2[max(0, int((j-0.5001).round()))]
+                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+20] = img.astype(np.uint8)
+            except:
+                pass
+                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
+        
+        # Sagittal T2/STIR Extracted
+        for i in range(0, 10, 1):
+            try:
+                p = f'{self.cfg.directory.image_dir2}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
+                print(p)
+                img = Image.open(p).convert('L')
+                img = np.array(img)
+                x[..., i+30] = img.astype(np.uint8)
             except:
                 pass
                 # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')

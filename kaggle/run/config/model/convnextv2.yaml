@@ -1,6 +1,6 @@
 name: "convnextv2_base"
 params:
   pretrained: true
-  in_channels: 30
+  in_channels: 40
   num_labels: 25
   num_classes: 75

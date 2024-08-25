@@ -5,10 +5,14 @@ __pycache__/
 
 # C extensions
 *.so
+data/
 cvt_png/
+extracted_png/
+extracted_png_demo/
 test_images/
 .hydra/
 wandb/
+*.png
 *.pt
 *.pth
 *.zip

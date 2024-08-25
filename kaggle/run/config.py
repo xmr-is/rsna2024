@@ -13,6 +13,7 @@ class DirectoryConfig:
     input_dir: str
     output_dir: str
     image_dir: str
+    image_dir2: str
     submission_dir: str
 
 @dataclass
