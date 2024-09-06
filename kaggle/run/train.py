@@ -35,8 +35,8 @@ def main(cfg: TrainConfig) -> None:
     if cfg.model.name == 'vit_b_16':
         model = RSNA2024_ViT_HipOA(cfg).to(env.device())
     else:
-        # model = RSNA24Model(cfg).to(env.device())
-        model = RSNA2024Model3Heads(cfg).to(env.device())
+        model = RSNA24Model(cfg).to(env.device())
+        #model = RSNA2024Model3Heads(cfg).to(env.device())
     
     run = WandBHelper(cfg, model).wandb_config()
 
@@ -46,7 +46,9 @@ def main(cfg: TrainConfig) -> None:
         weight_decay=cfg.scheduler.wd
     )
 
-    warmup_steps = cfg.trainer.epochs/10 * len(train_dataloader) // cfg.trainer.grad_acc
+    warmup_steps = cfg.trainer.epochs/10 * len(train_dataloader)
+    
+    #warmup_steps = 0
     num_total_steps = cfg.trainer.epochs * len(train_dataloader) // cfg.trainer.grad_acc
     num_cycles = cfg.scheduler.num_cycles
     scheduler = get_cosine_schedule_with_warmup(

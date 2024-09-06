@@ -19,11 +19,13 @@ class RSNA24Model(nn.Module):
             model_name=self.cfg.model.name,
             pretrained=self.cfg.model.params.pretrained,
             features_only=False,
-            num_classes=10,
+            in_chans=self.cfg.model.params.in_channels,
+            num_classes=self.cfg.model.params.num_classes,
+            #num_classes=10,
             global_pool='avg',
         )
         # self.load_weight()
-        self.init_layer()
+        # self.init_layer()
     
     def load_weight(self):
         self.model.load_state_dict(

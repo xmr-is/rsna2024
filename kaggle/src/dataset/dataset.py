@@ -52,7 +52,6 @@ class TrainDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T1/{i:03d}.png'
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i] = img.astype(np.uint8)
@@ -64,7 +63,6 @@ class TrainDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+10] = img.astype(np.uint8)
@@ -88,7 +86,6 @@ class TrainDataset(Dataset):
                 # 60枚あるAxial_T2から10枚を６スライスごとに抽出する、
                 # メモリ消費を抑える、計算コストを抑えるため？
                 p = axt2[max(0, int((j-0.5001).round()))]
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+20] = img.astype(np.uint8)
@@ -100,7 +97,6 @@ class TrainDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir2}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+30] = img.astype(np.uint8)
@@ -150,7 +146,6 @@ class ValidDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T1/{i:03d}.png'
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i] = img.astype(np.uint8)
@@ -162,7 +157,6 @@ class ValidDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+10] = img.astype(np.uint8)
@@ -186,7 +180,6 @@ class ValidDataset(Dataset):
                 # 60枚あるAxial_T2から10枚を６スライスごとに抽出する、
                 # メモリ消費を抑える、計算コストを抑えるため？
                 p = axt2[max(0, int((j-0.5001).round()))]
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+20] = img.astype(np.uint8)
@@ -198,7 +191,6 @@ class ValidDataset(Dataset):
         for i in range(0, 10, 1):
             try:
                 p = f'{self.cfg.directory.image_dir2}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
-                print(p)
                 img = Image.open(p).convert('L')
                 img = np.array(img)
                 x[..., i+30] = img.astype(np.uint8)
