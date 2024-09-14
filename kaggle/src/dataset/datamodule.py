@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from run.config import InferenceConfig
 from src.augmentation.augmentation import Augmentation
-from src.dataset.dataset import TrainDataset, ValidDataset, InferenceDataset
+from src.dataset.dataset import LandmarkDetectionDataset, TrainDataset, ValidDataset, InferenceDataset
 
 class TrainDataModule(object):
 
@@ -69,9 +69,29 @@ class InferenceDataModule(object):
 
     def prepare_loader(self) -> DataLoader:
         return self.inference_dataloader()
+    
+    def prepare_detection_loader(self) -> DataLoader:
+        return self.inference_detection_dataloader()
 
     def inference_dataloader(self) -> DataLoader:
         inference_dataset = InferenceDataset(
+            cfg=self.cfg,
+            df=self.test_df,
+            study_ids=self.study_ids,
+            transform=Augmentation(self.cfg).transform_valid()
+        )
+        inference_loader = DataLoader(
+            inference_dataset,
+            batch_size=self.cfg.batch_size,
+            shuffle=False,
+            num_workers=eval(self.cfg.inferencer.num_workers),
+            pin_memory=True,
+            drop_last=True,
+        )
+        return inference_loader
+
+    def inference_detection_dataloader(self) -> DataLoader:
+        inference_dataset = LandmarkDetectionDataset(
             cfg=self.cfg,
             df=self.test_df,
             study_ids=self.study_ids,

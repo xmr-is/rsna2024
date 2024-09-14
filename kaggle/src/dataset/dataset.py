@@ -94,15 +94,16 @@ class TrainDataset(Dataset):
                 # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
         
         # Sagittal T2/STIR Extracted
-        for i in range(0, 10, 1):
-            try:
-                p = f'{self.cfg.directory.image_dir2}/{st_id}/Sagittal T2_STIR/{i:03d}.png'
-                img = Image.open(p).convert('L')
-                img = np.array(img)
-                x[..., i+30] = img.astype(np.uint8)
-            except:
-                pass
-                # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
+        for idx, level in enumerate(['l1_l2','l2_l3','l3_l4','l4_l5','l5_s1']):
+            for i in range(0, 10, 1):
+                try:
+                    p = f'{self.cfg.directory.image_dir2}/{st_id}/Sagittal T2_STIR/{level}/{i:03d}.png'
+                    img = Image.open(p).convert('L')
+                    img = np.array(img)
+                    x[..., i+30+idx*10] = img.astype(np.uint8)
+                except:
+                    pass
+                    # raise RuntimeError(f'failed to load on {st_id}, Sagittal T2/STIR')
 
         assert np.sum(x)>0
             
@@ -110,7 +111,7 @@ class TrainDataset(Dataset):
             x = self.transform(image=x)['image']
 
         x = x.transpose(2, 0, 1)
-                
+
         return x, label
 
 class ValidDataset(Dataset):
@@ -257,7 +258,8 @@ class InferenceDataset(Dataset):
         x = np.zeros((
             self.cfg.dataset.image_size, 
             self.cfg.dataset.image_size, 
-            self.cfg.model.params.in_channels
+            # self.cfg.model.params.in_channels
+            30
             ), dtype=np.uint8
         )
         st_id = self.study_ids[idx]        
@@ -322,3 +324,114 @@ class InferenceDataset(Dataset):
         x = x.transpose(2, 0, 1)
                 
         return x, str(st_id)
+
+class LandmarkDetectionDataset(Dataset):
+    def __init__(
+            self, 
+            cfg: InferenceConfig, 
+            df: pd.DataFrame, 
+            study_ids: List[int], 
+            phase='inference', 
+            transform=None
+        ):
+        self.cfg = cfg
+        self.df = df
+        self.study_ids = study_ids
+        self.transform = transform
+        self.phase = phase
+        self.env = InferenceEnvironmentHelper(self.cfg)
+    
+    def __len__(self):
+        return len(self.study_ids)
+    
+    def get_img_paths(
+            self, 
+            study_id, 
+            series_desc
+        ) -> Tuple[torch.Tensor, List[str]]:
+        pdf = self.df[self.df['study_id']==study_id]
+        pdf_ = pdf[pdf['series_description']==series_desc]
+        allimgs = []
+        for i, row in pdf_.iterrows():
+            pimgs = glob.glob(f'{self.cfg.directory.base_dir}/test_images/{study_id}/{row["series_id"]}/*.dcm')
+            pimgs = sorted(pimgs, key=self.env.natural_keys)
+            allimgs.extend(pimgs)
+        return allimgs
+    
+    def read_dcm_ret_arr(self, src_path, num_stack) -> np.ndarray:
+        dicom_data = pydicom.dcmread(src_path)
+        image = dicom_data.pixel_array
+        image = (image - image.min()) / (image.max() - image.min() + 1e-6) * 255
+        img = cv2.resize(
+            image, 
+            (self.cfg.dataset.image_size, 
+             self.cfg.dataset.image_size),
+            interpolation=cv2.INTER_CUBIC
+        )
+        assert img.shape==(self.cfg.dataset.image_size, self.cfg.dataset.image_size)
+        if num_stack == 3:
+            img = np.stack([img] * num_stack, axis=-1)
+        else:
+            pass
+        
+        return img
+    
+    def __getitem__(self, idx) -> Tuple[torch.Tensor, str]:
+        x = np.zeros((
+            self.cfg.dataset.image_size, 
+            self.cfg.dataset.image_size, 
+            3
+            ), dtype=np.uint8
+        )
+        x_10 = np.zeros((
+            self.cfg.dataset.image_size, 
+            self.cfg.dataset.image_size, 
+            10
+            ), dtype=np.uint8
+        )
+        st_id = self.study_ids[idx]        
+            
+        # Sagittal T2/STIR
+        allimgs_st2 = self.get_img_paths(st_id, 'Sagittal T2/STIR')
+        if len(allimgs_st2)==0:
+            print(st_id, ': Sagittal T2/STIR, has no images')
+        else:
+            med = len(allimgs_st2)//2
+            med_array = np.array([med-1, med, med+1])
+
+            # for idx, i in enumerate(med_array):
+            #     try:
+            #         img = self.read_dcm_ret_arr(allimgs_st2[i-1])
+            #         x[..., idx] = img.astype(np.uint8)
+            #     except:
+            #         print(f'failed to load on {st_id}, Sagittal T2/STIR')
+            #         pass
+            try:
+                # for landmark detection
+                img = self.read_dcm_ret_arr(allimgs_st2[med-1], 3)
+                x = img.astype(np.uint8)
+                
+                # for additional channels
+                step = len(allimgs_st2) / 10.0
+                st = len(allimgs_st2)/2.0 - 4.0*step
+                end = len(allimgs_st2)+0.0001
+
+                for j, i in enumerate(np.arange(st, end, step)):
+                    try:
+                        ind2 = max(0, int((i-0.5001).round()))
+                        img_10 = self.read_dcm_ret_arr(allimgs_st2[ind2], 10)
+                        x_10[...,j] = img_10.astype(np.uint8)
+                    except:
+                        print(f'failed to load on {st_id}, Axial T2')
+                        pass  
+            except:
+                print(f'failed to load on {st_id}, Sagittal T2/STIR')
+                pass
+            
+        if self.transform is not None:
+            x = self.transform(image=x)['image']
+            x_10 = self.transform(image=x_10)['image']
+        x = x.transpose(2, 0, 1)
+        x_10 = x_10.transpose(2, 0, 1)
+                
+        return x, x_10, str(st_id)

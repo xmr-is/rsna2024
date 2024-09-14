@@ -13,7 +13,7 @@ defaults:
   - directory: local
   - common: label
   - dataset: rsna24_v1
-  - model: convnextv2
+  - model: swinbase
   - split: fold_0
 
 env: local

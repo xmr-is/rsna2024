@@ -1,6 +1,6 @@
 name: "swin_base_patch4_window12_384"
 params:
   pretrained: true
-  in_channels: 40
+  in_channels: 80
   num_labels: 25
   num_classes: 75

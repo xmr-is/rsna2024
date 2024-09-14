@@ -1,5 +1,5 @@
 base_dir: /kaggle/input/rsna-2024-lumbar-spine-degenerative-classification
-input_dir: /kaggle/input/rsna2024-py-training-3heads
+input_dir: /kaggle/input/rsna2024-py-training-80ch
 output_dir: /kaggle/working/output
 image_dir: /kaggle/input/rsna2024-dicom-png/cvt_png
 image_dir2: /kaggle/input/rsna2024-cropped/extracted_png

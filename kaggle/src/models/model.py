@@ -172,3 +172,33 @@ class RSNA2024_ViT_HipOA(nn.Module):
     def forward(self, x) -> torch.Tensor:
         spine_logits = self.model(x)
         return spine_logits
+    
+
+class RSNA24DetectionModel(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.model = timm.create_model(
+            model_name="swin_large_patch4_window12_384.ms_in22k",
+            pretrained=False,
+            features_only=False,
+            in_chans=3,
+            num_classes=10,
+            global_pool='avg',
+        )
+        self.load_pretrained_weight()
+
+    def load_pretrained_weight(self) -> None:
+        try:
+            self.model.load_state_dict(
+                torch.load(
+                    f'/Users/markun/Downloads/swin_large_patch4_window12_384.ms_in22k_0 2.pt',
+                    map_location=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                )
+            )
+            print("- Weight File Loaded !!")
+        except Exception as e:
+            print(e, "- Weight File Not Found !!")
+    
+    def forward(self, x) -> torch.Tensor:
+        x = self.model(x)
+        return x

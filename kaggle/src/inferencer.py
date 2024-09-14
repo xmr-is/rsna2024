@@ -12,6 +12,9 @@ from sklearn.metrics import log_loss
 
 import wandb
 from tqdm import tqdm
+
+from src.utils.crop_disc import CropDiscs
+
 tqdm.pandas()
 import torch
 import torch.nn as nn
@@ -22,6 +25,7 @@ from src.models.model import RSNA2024Model3Heads, RSNA24Model
 from src.dataset.datamodule import InferenceDataModule
 from src.dataset.prepare_data import PrepareTestData
 from src.utils.environment_helper import InferenceEnvironmentHelper
+from src.utils.visualize_helper import visualize_prediction
 
 @dataclass
 class Inferencer(object):
@@ -31,16 +35,41 @@ class Inferencer(object):
     def __post_init__(self):
         self.env = InferenceEnvironmentHelper(self.cfg)
 
+    def landmark_detection(self, model):
+        arr = []
+        autocast = self.env.autocast()
+        with torch.no_grad():
+            pbar = tqdm(
+                enumerate(self.inference_dataloader),
+                total=len(self.inference_dataloader),
+                desc='Inference',
+                disable=False
+            )
+            for idx, (inputs, inputs_10, st_id) in pbar:
+                inputs = inputs.to(self.env.device())
+                
+                with autocast:
+                    outputs = model(inputs)
+                    outputs = torch.sigmoid(outputs)
+                # visualize_prediction(inputs, outputs, 30)
+                cropped = CropDiscs.crop_by_coordinate(inputs_10, outputs, 30)
+                arr.append(cropped)
+            out_array = torch.stack(arr)
+
+        return out_array
+
     def predict(
             self, 
-            models: List[nn.Module]
+            models: List[nn.Module],
+            extracted_tensor: torch.Tensor
         ) -> Tuple[List[np.ndarray], List[str]]:
-        predictions, row_names = self.inference(models)        
+        predictions, row_names = self.inference(models, extracted_tensor)        
         return predictions, row_names
 
     def inference(
             self, 
-            models: List[nn.Module]
+            models: List[nn.Module],
+            extracted_tensor: torch.Tensor
         ) -> Tuple[List[np.ndarray], List[str]]:
         autocast = self.env.autocast()
         predictions = []
@@ -53,7 +82,9 @@ class Inferencer(object):
                 desc='Inference',
                 disable=False
             )
-            for idx, (inputs, st_id) in pbar:         
+            for idx, (inputs, st_id) in pbar:
+                inputs = torch.concat((inputs, extracted_tensor[idx].unsqueeze(0)), dim=1)
+
                 inputs = inputs.to(self.env.device())
                 pred_per_study = np.zeros((25, 3))
                 
@@ -64,22 +95,15 @@ class Inferencer(object):
                 with autocast:
                     for idx, model in enumerate(models):
                         print(f'--- Now Predicting fold {idx} ---')
-                        outputs = model(inputs)
+                        outputs = model(inputs).squeeze(0)
 
-                        for col in range(5):
-                            output = outputs[0][:,col*3:col*3+3]
-                            y_pred_scs = output.float().softmax(1).cpu().numpy().squeeze(0)
-                            pred_per_study[col] += y_pred_scs / len(models)
-                        for col in range(10):
-                            output = outputs[1][:,col*3:col*3+3]
-                            y_pred_nfn = output.float().softmax(1).cpu().numpy().squeeze(0)
-                            pred_per_study[col+5] += y_pred_nfn / len(models)
-                        for col in range(10):
-                            output = outputs[2][:,col*3:col*3+3]
-                            y_pred_ss = output.float().softmax(1).cpu().numpy().squeeze(0)
-                            pred_per_study[col+15] += y_pred_ss / len(models)
+                        for col in range(self.cfg.model.params.num_labels):
+                            output = outputs[col*3:col*3+3]
+                            pred = output.float().softmax(0).cpu().numpy()
+                            pred_per_study[col] += pred / len(models)
+                            #pred_per_study[col] += pred / 1
 
-                    predictions.append(pred_per_study)
+                        predictions.append(pred_per_study)
         predictions = np.concatenate(predictions, axis=0)
                     
         return predictions, row_names
@@ -99,7 +123,7 @@ class Inferencer(object):
 
         for idx, cp in enumerate(CKPT_PATHS):
             print(f'loading {cp}...')
-            model = RSNA2024Model3Heads(
+            model = RSNA24Model(
                 cfg=self.cfg
             )
             model.load_state_dict(torch.load(cp))
