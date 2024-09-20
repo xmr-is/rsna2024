@@ -36,7 +36,6 @@ class Inferencer(object):
         self.env = InferenceEnvironmentHelper(self.cfg)
 
     def landmark_detection(self, model):
-        arr = []
         autocast = self.env.autocast()
         with torch.no_grad():
             pbar = tqdm(
@@ -46,30 +45,30 @@ class Inferencer(object):
                 disable=False
             )
             for idx, (inputs, inputs_10, st_id) in pbar:
-                inputs = inputs.to(self.env.device())
+                # inputs = inputs.to(self.env.device())
+                inputs = inputs.to(self.env.device()).half()
                 
                 with autocast:
+                    model.to(self.env.device())
+                    model.half()
                     outputs = model(inputs)
                     outputs = torch.sigmoid(outputs)
                 # visualize_prediction(inputs, outputs, 30)
                 cropped = CropDiscs.crop_by_coordinate(inputs_10, outputs, 30)
-                arr.append(cropped)
-            out_array = torch.stack(arr)
-
-        return out_array
+                # cropped volumes per study_id
+                # torch.save(cropped, f'{self.cfg.directory.submission_dir}/extracted_features_{st_id[0]}.pt')
+                torch.save(cropped, f'{self.cfg.directory.temp_dir}/extracted_features_{st_id[0]}.pt')
 
     def predict(
             self, 
             models: List[nn.Module],
-            extracted_tensor: torch.Tensor
         ) -> Tuple[List[np.ndarray], List[str]]:
-        predictions, row_names = self.inference(models, extracted_tensor)        
+        predictions, row_names = self.inference(models)        
         return predictions, row_names
 
     def inference(
             self, 
             models: List[nn.Module],
-            extracted_tensor: torch.Tensor
         ) -> Tuple[List[np.ndarray], List[str]]:
         autocast = self.env.autocast()
         predictions = []
@@ -82,8 +81,12 @@ class Inferencer(object):
                 desc='Inference',
                 disable=False
             )
+
             for idx, (inputs, st_id) in pbar:
-                inputs = torch.concat((inputs, extracted_tensor[idx].unsqueeze(0)), dim=1)
+
+                loaded_tensor = torch.load(f'{self.cfg.directory.temp_dir}/extracted_features_{st_id[0]}.pt')
+                
+                inputs = torch.concat((inputs, loaded_tensor.unsqueeze(0)), dim=1)
 
                 inputs = inputs.to(self.env.device())
                 pred_per_study = np.zeros((25, 3))
@@ -101,7 +104,6 @@ class Inferencer(object):
                             output = outputs[col*3:col*3+3]
                             pred = output.float().softmax(0).cpu().numpy()
                             pred_per_study[col] += pred / len(models)
-                            #pred_per_study[col] += pred / 1
 
                         predictions.append(pred_per_study)
         predictions = np.concatenate(predictions, axis=0)
@@ -128,7 +130,7 @@ class Inferencer(object):
             )
             model.load_state_dict(torch.load(cp))
             model.eval()
-            #model.half()
+            model.half()
             model.to(self.env.device())
             models.append(model)
         return models

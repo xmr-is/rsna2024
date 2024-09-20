@@ -4,3 +4,4 @@ output_dir: /Users/markun/git/rsna2024/kaggle/outputs
 image_dir: /Users/markun/git/rsna2024/kaggle/data/cvt_png
 image_dir2: /Users/markun/git/rsna2024/kaggle/data/extracted_png
 submission_dir: /Users/markun/git/rsna2024/kaggle/outputs
+temp_dir: /Users/markun/git/rsna2024/kaggle/outputs

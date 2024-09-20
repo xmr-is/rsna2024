@@ -1,5 +1,6 @@
 import hydra
 import os
+import gc
 import sys
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
@@ -13,7 +14,7 @@ import torch.nn as nn
 from run.config import InferenceConfig
 from src.inferencer import Inferencer
 from src.models.model import RSNA24DetectionModel, RSNA24Model
-from src.dataset.prepare_data import PrepareTestData
+from src.dataset.prepare_data import PrepareTestData, PrepareData
 from src.dataset.datamodule import InferenceDataModule
 from src.utils.environment_helper import EnvironmentHelper
 from src.utils.visualize_helper import visualize_prediction
@@ -31,7 +32,6 @@ def main(cfg: InferenceConfig):
 
     datamodule = InferenceDataModule(cfg, test_df, study_ids)
     inference_detection_dataloader = datamodule.prepare_detection_loader()
-    inference_dataloader = datamodule.prepare_loader()
 
     detection_model = RSNA24DetectionModel()
 
@@ -39,14 +39,21 @@ def main(cfg: InferenceConfig):
         cfg=cfg,
         inference_dataloader=inference_detection_dataloader,
     )
-    out_array = inferencer.landmark_detection(detection_model)
-    
+    inferencer.landmark_detection(detection_model)
+
+    env.refresh_memory(
+        detection_model=detection_model,
+        inferencer=inferencer,
+        inferencer_detection_dataloader=inference_detection_dataloader,
+    )
+
+    inference_dataloader = datamodule.prepare_loader()
     inferencer2 = Inferencer(
         cfg=cfg,
         inference_dataloader=inference_dataloader,
     )
     models = inferencer2.amsambles()
-    predictions, row_names = inferencer2.predict(models, out_array)
+    predictions, row_names = inferencer2.predict(models)
     
     submission = inferencer.make_submission(predictions, row_names)
     submission.to_csv(f'{cfg.directory.submission_dir}/submission.csv', index=False)

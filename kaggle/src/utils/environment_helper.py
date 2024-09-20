@@ -1,7 +1,7 @@
+import gc
 import os
 import re
 import random
-from re import I
 from typing import Any
 import torch
 
@@ -45,6 +45,16 @@ class EnvironmentHelper(object):
             enabled=self.cfg.trainer.use_amp, 
             init_scale=4096
         )
+    @staticmethod
+    def refresh_memory(
+            detection_model, 
+            inferencer, 
+            inferencer_detection_dataloader
+        ):
+        del detection_model
+        del inferencer
+        del inferencer_detection_dataloader
+        gc.collect()
     
     
 class InferenceEnvironmentHelper(object):
@@ -83,3 +93,4 @@ class InferenceEnvironmentHelper(object):
 
     def natural_keys(self, text):
         return [ self.atoi(c) for c in re.split(r'(\d+)', text) ]
+    

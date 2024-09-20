@@ -191,7 +191,8 @@ class RSNA24DetectionModel(nn.Module):
         try:
             self.model.load_state_dict(
                 torch.load(
-                    f'/Users/markun/Downloads/swin_large_patch4_window12_384.ms_in22k_0 2.pt',
+                    f'/kaggle/input/spine-landmark-detection-model/swin_large_patch4_window12_384.ms_in22k_0 2.pt',
+                    # f'/Users/markun/Downloads/swin_large_patch4_window12_384.ms_in22k_0 2.pt',
                     map_location=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
                 )
             )

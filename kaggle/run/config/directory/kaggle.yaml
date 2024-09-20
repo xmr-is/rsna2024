@@ -4,3 +4,4 @@ output_dir: /kaggle/working/output
 image_dir: /kaggle/input/rsna2024-dicom-png/cvt_png
 image_dir2: /kaggle/input/rsna2024-cropped/extracted_png
 submission_dir: /kaggle/working
+temp_dir: /kaggle/temp

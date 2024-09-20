@@ -15,6 +15,7 @@ class DirectoryConfig:
     image_dir: str
     image_dir2: str
     submission_dir: str
+    temp_dir: str
 
 @dataclass
 class SplitConfig:
