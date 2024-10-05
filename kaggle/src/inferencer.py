@@ -50,6 +50,7 @@ class Inferencer(object):
                 
                 with autocast:
                     model.to(self.env.device())
+                    # localの場合不要
                     model.half()
                     outputs = model(inputs)
                     outputs = torch.sigmoid(outputs)
@@ -94,18 +95,18 @@ class Inferencer(object):
                 for condition in self.cfg.common.conditions:
                     for level in self.cfg.common.levels:
                         row_names.append(st_id[0] + '_' + condition + '_' + level)
-                            
                 with autocast:
                     for idx, model in enumerate(models):
                         print(f'--- Now Predicting fold {idx} ---')
-                        outputs = model(inputs).squeeze(0)
+                        #outputs = model(inputs).squeeze(0)
+                        outputs = model(inputs)[0]
 
                         for col in range(self.cfg.model.params.num_labels):
                             output = outputs[col*3:col*3+3]
                             pred = output.float().softmax(0).cpu().numpy()
                             pred_per_study[col] += pred / len(models)
 
-                        predictions.append(pred_per_study)
+                    predictions.append(pred_per_study)
         predictions = np.concatenate(predictions, axis=0)
                     
         return predictions, row_names

@@ -34,6 +34,7 @@ class RSNA24Model(nn.Module):
                 map_location=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             )
         )
+        print("loaded pretrained weight (landmark)")
 
     def init_layer(self):
         self.model.patch_embed.proj = nn.Conv2d(
@@ -46,6 +47,8 @@ class RSNA24Model(nn.Module):
             in_features=1536,
             out_features=self.cfg.model.params.num_classes
         )
+        print("initialized layer")
+        print(self.model)
     
     def forward(self, x) -> torch.Tensor:
         x = self.model(x)
@@ -192,7 +195,7 @@ class RSNA24DetectionModel(nn.Module):
             self.model.load_state_dict(
                 torch.load(
                     f'/kaggle/input/spine-landmark-detection-model/swin_large_patch4_window12_384.ms_in22k_0 2.pt',
-                    # f'/Users/markun/Downloads/swin_large_patch4_window12_384.ms_in22k_0 2.pt',
+                    #f'/Users/markun/Downloads/swin_large_patch4_window12_384.ms_in22k_0 2.pt',
                     map_location=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
                 )
             )
